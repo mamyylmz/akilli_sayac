@@ -121,3 +121,40 @@ Test senaryosunda `t_kesme = 23`: ana röle 23:00'te açılır ve gün sonuna ka
 - Röle açık direnç yolu 1e-8 S → I ≈ 230 · 1e-8 = 2,3 µA ≈ **0**. Bu yüzden P ≈ 0 ve Q ≈ 0.
 - Gerilim **şebeke tarafında** ölçüldüğü için V_rms = **230 V** kalır. Böylece "röle açık" (V var) ile "şebeke kesildi" (V yok) durumları ayırt edilebilir (D aşaması).
 - Enerji sayacı 23:03–24:00 arasında **artmamalıdır**.
+
+## 13. D aşaması – koruma senaryoları (test_D_koruma.m)
+
+### Zaman ölçekleri
+| Ölçek | Kapsam | Dönüşüm |
+|---|---|---|
+| Profil | Cihaz programları, tarife, enerji, koruma zamanlayıcıları | 1 s sim = 1 saat; 1 profil dk = 16,7 ms sim |
+| Fiziksel | 50 Hz dalga, RMS/güç ölçüm penceresi, geçiciler, gerilim kararlılık penceresi | 1 periyot = 20 ms sim = 1,2 profil dk |
+
+Gerilim kararlılık penceresi `t_kararli` = 3 periyot = 60 ms sim ≈ 3,6 profil dk. Gerçek dünyadaki 3 s şartının birebir karşılığı değildir; ölçüm penceresinin 3 katı olarak seçilmiş simülasyon penceresidir (Muhammed Yılmaz onayı, 19.11.2026).
+
+### Parametreler
+P_sinir = 4000 W, P_geri = 3800 W, t_uyari = 1 dk, t_asim = 3 dk, t_bekle = 5 dk (profil), V_min–V_max = 207–253 V, V_kesinti = 23 V, Ts_kontrol = 1 ms.
+
+### Aşımın başlama anı (S2–S6)
+18:00'de su ısıtıcı ve fırın birlikte açılır: P 149 W'tan 4544 W'a çıkar. Güç ölçümü bir periyotluk kayan ortalamadır; ölçülen değer 4000 W'ı, pencerenin şu kadarı yeni yükle dolunca geçer:
+
+(4000 − 149) / (4544 − 149) = 0,876 → 0,876 × 20 ms = 17,5 ms = **1,05 profil dk**
+
+- Aşım başlangıcı ≈ 18:01,05
+- Uyarı = başlangıç + t_uyari ≈ **18:02,05**
+- Kesme = başlangıç + t_asim ≈ **18:04,05** (+ en fazla 1 örnekleme, 0,06 dk) → testte beklenen 18:04,1 ± 0,25 dk
+
+### Tahmini yük (cihaz programlarından, `tahmin_P`)
+| Saatten itibaren | 00:00 | 07:00 | 07:10 | 18:00 | 18:10 | 19:00 | 20:00 | 20:30 | 22:30 | 23:00 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Tahmini yük (W) | 150 | 2150 | 150 | **4550** | **2550** | 1633 | 2773 | 1373 | 2693 | 1553 |
+
+### Senaryolar ve beklenen sonuçlar
+| Senaryo | Kurulum | Beklenen |
+|---|---|---|
+| S1 Normal | Su ısıtıcı 17:00–17:10 | Günün en büyük yükü 2773 W (20:00–20:30) < 4000 W: uyarı ve kesme yok; günlük enerji 14,56 kWh (değişmez) |
+| S2 Kısa aşım | Su ısıtıcı 18:00–18:02 | Aşım ≈ 18:01,05–18:02,3 (≈ 1,3 dk < 3 dk): uyarı 18:02,05, kesme yok |
+| S3 Kalıcı aşım | Referans gün, istek yok | Kesme ≈ 18:04,1; I = P = 0, V = 230 V; onay gelmediği için röle gün sonuna kadar açık; durum 2 |
+| S4 Güvenli bağlantı | S3 + 18:15'te istek | Bekleme 18:15 − 18:04,1 = 10,9 dk ≥ 5 ✓; tahmini yük 2550 ≤ 3800 ✓; gerilim 230 V, kararlı ✓ → **KABUL**; 18:30'da P = 2547 W (fırın + baz) |
+| S5 Red | S3 + 18:06'da istek | Bekleme 1,9 dk < 5 (1) ve tahmini yük 4550 > 3800 (2) → **RED, maske 3**; koşullar 18:10'dan sonra sağlansa da röle kendiliğinden kapanmaz |
+| S6 Gerilim arızası | S4 + 18:12–18:20 arası 190 V | 18:15'te V = 190 V < 207 V → **RED, maske 4**; durum 5; gerilim düzelince de röle açık kalır |

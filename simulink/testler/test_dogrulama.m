@@ -5,18 +5,21 @@
 %
 % Bu betik:
 %   C0–C4 : parametre dosyası, kWh katsayısı ve tarife dilimleri kontrolleri
-%   1. çalıştırma – NORMAL GÜN (test yükleri kapalı)
+%   1. çalıştırma – NORMAL GÜN, 'measurement_test' modu (koruma devre dışı, test yükleri kapalı)
 %       T6  24 saatlik profil (I, P, Q, cos φ)      T7  toplam enerji
 %       T8  üç zamanlı sayaçlar                      T9  güç faktörü
 %       T10 reaktif enerji                           T13 görünür güç S
-%   2. çalıştırma – TEST SENARYOSU (parametre dosyasındaki "test_senaryo" bölümü ile)
+%   2. çalıştırma – TEST SENARYOSU, 'measurement_test' modu (parametre dosyasındaki "test_senaryo" bölümü ile)
 %       T12 kapasitif test yükü 03:00–04:00 (Q < 0, kapasitif sayaç)
 %       T4  ana röle 23:00'te açılır (I = P = Q = 0, V = 230 V, sayaç durur)
+% Not: Koruma (D aşaması) varsayılan çalışmada AKTİFtir. C aşaması referans ölçüm testleri,
+%      sonuçların korunması için 'measurement_test' modunda (koruma devre dışı) yapılır.
+%      Koruma senaryoları ayrı betikte test edilir: testler/test_D_koruma.m
 % Model KAYDEDİLMEZ: ölçüm kaydı geçici olarak açılır, sonra geri alınır.
 % Çıktılar (testler/ klasörüne): test_sonuclari.xlsx ve test_sonuclari.md
 % Beklenen değerlerin hesabı: testler/teorik_hesaplar.md
 
-clear; clc;
+clear;   % (clc yok: arka arkaya çalışan testlerin çıktısı silinmesin)
 testDir = fileparts(mfilename('fullpath'));
 kokDir  = fileparts(testDir);
 cd(kokDir);                              % model ve parametre dosyası ana klasörde
@@ -31,7 +34,8 @@ akilli_sayac_param;
 gerekli = {'Vpk','f','R_baz','L_baz','R_kettle','R_firin','R_tv','R_bulasik', ...
            'R_camasir','L_camasir','R_klima','L_klima','kettle_t','kettle_u', ...
            'firin_t','tv_t','bulasik_t','camasir_t','klima_t','t_kesme','t_stop', ...
-           'k_kWh','T1_t','T1_u','T2_t','T2_u','T3_t','T3_u','C_kap','kap_t','kap_u'};
+           'k_kWh','T1_t','T1_u','T2_t','T2_u','T3_t','T3_u','C_kap','kap_t','kap_u', ...
+           'sebeke_t','sebeke_V','test_modu','kor_par','tahmin_t','tahmin_P','baglan_t','baglan_u','Ts_kontrol'};
 eksik = {};
 for k = 1:numel(gerekli)
     if ~exist(gerekli{k}, 'var'), eksik{end+1} = gerekli{k}; end %#ok<SAGROW>
@@ -40,6 +44,7 @@ TS = kSayi(TS, 'C0', 'Parametre dosyasında eksik değişken sayısı', 'adet', 
 if ~isempty(eksik), fprintf('Eksik değişkenler: %s\n', strjoin(eksik, ', ')); end
 TS = kSayi(TS, 'C0', 'Normal günde kapasitif test yükü kapalı (kap_u toplamı)', 'adet', 0, sum(kap_u), 0, 'Mutlak');
 TS = kSayi(TS, 'C0', 'Normal günde röle testi kapalı (t_kesme > 24)', 'adet', 1, double(t_kesme > 24), 0, 'Mutlak');
+TS = kSayi(TS, 'C0', 'Varsayılan çalışmada koruma aktif (koruma_aktif)', 'adet', 1, koruma_aktif, 0, 'Mutlak');
 
 %% C1–C2) k_kWh dönüşüm katsayısı
 TS = kSayi(TS, 'C1', 'k_kWh dönüşüm katsayısı (3600/3,6e6)', '-', 1e-3, k_kWh, 1e-12, 'Mutlak');
@@ -88,8 +93,8 @@ kayit = { 'RMS Measurement',    1, 'Vrms';
           'cos_phi_hesap',      1, 'cosphi';
           'Reaktif_Oran_Yuzde', 1, 'oran' };
 
-%% 1. ÇALIŞTIRMA – NORMAL GÜN
-[logs, sure1] = modeliCalistir(mdl, kayit, []);
+%% 1. ÇALIŞTIRMA – NORMAL GÜN ('measurement_test': koruma devre dışı)
+[logs, sure1] = modeliCalistir(mdl, kayit, struct('test_modu', 'measurement_test'));
 [tV,V]  = sinyalAl(logs,'Vrms');   [tI,I]  = sinyalAl(logs,'Irms');
 [tP,P]  = sinyalAl(logs,'P');      [tQ,Q]  = sinyalAl(logs,'Q');
 [tS,S]  = sinyalAl(logs,'S');      [tE,E]  = sinyalAl(logs,'E');
@@ -155,6 +160,7 @@ TS = kSayi(TS, 'T10', 'Kapasitif reaktif enerji (normal günde kapasitif yük yo
 TS = kSayi(TS, 'T10', 'Reaktif oran E_R / E (izleme göstergesi, ceza değil)', '%', 43.5, OR(end), 0.5, 'Mutlak');
 
 %% 2. ÇALIŞTIRMA – TEST SENARYOSU (kapasitif test yükü + röle kesme)
+sen.test_modu = 'measurement_test';   % koruma devre dışı (ölçüm testi)
 sen.kap_t   = [0 3 4 25];      % kondansatör 03:00–04:00 açık
 sen.kap_u   = [0 1 0 0];
 sen.t_kesme = 23;              % ana röle 23:00'te açılır (gün sonuna kadar)
@@ -217,8 +223,8 @@ writetable(T, xlsDosya, 'Sheet', 'Sonuclar', 'WriteMode', 'replacefile');
 fid = fopen(mdDosya, 'w', 'n', 'UTF-8');
 fprintf(fid, '# Akıllı Sayaç – Doğrulama Sonuçları (A–C aşamaları)\n\n');
 fprintf(fid, '- Tarih: %s\n- MATLAB: %s\n- Model: %s.slx\n', char(datetime('now')), version, mdl);
-fprintf(fid, '- 1. çalıştırma: normal gün (test yükleri kapalı), %.1f s\n', sure1);
-fprintf(fid, '- 2. çalıştırma: test senaryosu (kondansatör 03:00–04:00, ana röle 23:00''te açık), %.1f s\n', sure2);
+fprintf(fid, '- 1. çalıştırma: normal gün, measurement_test modu (koruma devre dışı, test yükleri kapalı), %.1f s\n', sure1);
+fprintf(fid, '- 2. çalıştırma: test senaryosu, measurement_test modu (kondansatör 03:00–04:00, ana röle 23:00''te açık), %.1f s\n', sure2);
 fprintf(fid, '- Özet: **%d GEÇTİ, %d KALDI, %d BEKLİYOR**\n\n', ng, nk, nb);
 fprintf(fid, '| Test | Kontrol | Birim | Beklenen | Gerçekleşen | Hata | Tolerans | Sonuç |\n|---|---|---|---|---|---|---|---|\n');
 for i = 1:size(TS,1)

@@ -28,6 +28,7 @@ function [role, durum, uyari, olay, red_maske] = koruma_mantigi(u, par) %#codege
 %              20 aşırı güç kesmesi
 %              30 yeniden bağlantı KABUL  31 yeniden bağlantı RED
 %              40 şebeke kesildi          41 şebeke geri geldi
+%              42 gerilim aralık dışına çıktı (207–253 V)   43 gerilim aralığa döndü
 %              50 kullanıcı kesti         51 kullanıcı açtı
 %   red_maske  red nedenleri (toplam):  1 bekleme süresi dolmadı
 %                                       2 tahmini yük > P_geri
@@ -46,10 +47,10 @@ t = u(1);  P = u(2);  V = u(3);  P_tahmin = u(4);  komut = u(5);  baglan = u(6);
 P_sinir = par(1);  P_geri = par(2);  t_uyari = par(3);  t_asim = par(4);  t_bekle = par(5);
 t_kararli = par(6);  V_min = par(7);  V_max = par(8);  V_kesinti = par(9);  koruma_aktif = par(10);
 
-persistent kilit t_kesme t_asim_bas t_vok_bas baglan_eski uyari_eski sebeke_eski komut_eski
+persistent kilit t_kesme t_asim_bas t_vok_bas baglan_eski uyari_eski sebeke_eski komut_eski vuygun_eski
 if isempty(kilit)
     kilit = 0;  t_kesme = 0;  t_asim_bas = -1;  t_vok_bas = -1;
-    baglan_eski = 0;  uyari_eski = 0;  sebeke_eski = 1;  komut_eski = 1;
+    baglan_eski = 0;  uyari_eski = 0;  sebeke_eski = 1;  komut_eski = 1;  vuygun_eski = 1;
 end
 
 olay = 0;
@@ -124,6 +125,10 @@ if olay == 0 && ~baslangic
         olay = 40;
     elseif sebeke > 0.5 && sebeke_eski < 0.5
         olay = 41;
+    elseif v_uygun < 0.5 && vuygun_eski > 0.5
+        olay = 42;
+    elseif v_uygun > 0.5 && vuygun_eski < 0.5
+        olay = 43;
     elseif komut < 0.5 && komut_eski > 0.5
         olay = 50;
     elseif komut > 0.5 && komut_eski < 0.5
@@ -133,6 +138,7 @@ end
 uyari_eski = uyari;
 sebeke_eski = sebeke;
 komut_eski = komut;
+vuygun_eski = v_uygun;
 
 % --- Durum kodu ---
 if baslangic

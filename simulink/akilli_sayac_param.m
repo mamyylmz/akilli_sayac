@@ -11,6 +11,7 @@
 %   19.11.2026 - Poyraz: görünür güç S, kapasitif test yükü (T12), test senaryosu bölümü
 %   19.11.2026 - Poyraz: şebeke kontrollü gerilim kaynağı ile modellendi (gerilim profili)
 %   19.11.2026 - Poyraz: D aşaması koruma parametreleri, zaman ölçekleri, test modları (Muhammed onayı)
+%   19.11.2026 - Poyraz: ev tipi batarya (gece şarj, puantta deşarj; ekip kararı)
 
 %% Zaman ölçeği
 % 1 s simülasyon = 1 saat gerçek zaman  ->  24 s simülasyon = 1 gün.
@@ -150,6 +151,24 @@ Ts_kontrol = 1e-3;       % s = 1 ms sim (= 3,6 profil saniyesi; periyodun 1/20's
 baglan_t = [0 25];
 baglan_u = [0 0];
 
+%% ===================== BATARYA (ev tipi enerji depolama) =====================
+% Sayacın EV tarafında, ana röleden sonra bağlıdır (sayaç şebekeden çekilen NET gücü ölçer).
+% Strateji (ekip kararı): gece (T3) şebekeden şarj olur, puantta (T2) evi besler.
+%  - Şebekeye enerji VERMEZ: deşarj gücü ≤ evin tahmini yükü (tahmin_P).
+%  - Şarj, bağlantı gücünü aşmamak için kısılır: şarj ≤ P_geri − tahmini yük.
+%  - Ana röle açıkken batarya durur (ada çalışmayı önleme).
+% İşaret: P_bat > 0 deşarj (eve güç verir), P_bat < 0 şarj (şebekeden güç çeker).
+% Değerler varsayımdır (ev tipi batarya); simülasyon parametresidir.
+batarya_aktif = 1;        % 1 = açık, 0 = kapalı ('measurement_test' modunda otomatik kapalı)
+E_bat      = 5;           % kWh, kapasite
+SOC_min    = 0.10;        % kullanılabilir alt sınır
+SOC_max    = 0.95;        % üst sınır
+SOC_0      = 0.63;        % gece yarısındaki doluluk (önceki günden kalan; kararlı güne yakın değer)
+P_sarj     = 1500;        % W, en büyük şarj gücü (yalnızca T3)
+P_desarj   = 2500;        % W, en büyük deşarj gücü (yalnızca T2)
+eta_sarj   = 0.95;        % şarj verimi
+eta_desarj = 0.95;        % deşarj verimi
+
 %% Enerji sayacı (Adım 6)
 % kWh = integral(P dt) * (3600 s gerçek / 1 s simülasyon) / (3.6e6 J/kWh)
 k_kWh = 3600/3.6e6;   % = 1/1000
@@ -196,3 +215,9 @@ clear ts_ct ts_cu ts_cP ts_i
 % Koruma mantığı parametre vektörü (MATLAB Function bloğuna tek girişle verilir)
 %          1       2      3       4      5       6         7     8     9          10
 kor_par = [P_sinir P_geri t_uyari t_asim t_bekle t_kararli V_min V_max V_kesinti koruma_aktif];
+
+% Batarya etkin mi?  'measurement_test' modunda (referans ölçüm testi) her zaman kapalı.
+batarya_etkin = double(batarya_aktif > 0.5 && ~strcmp(test_modu, 'measurement_test'));
+% Batarya mantığı parametre vektörü (MATLAB Function bloğuna tek girişle verilir)
+%          1             2     3       4       5     6      7        8        9          10
+bat_par = [batarya_etkin E_bat SOC_min SOC_max SOC_0 P_sarj P_desarj eta_sarj eta_desarj P_geri];

@@ -2,7 +2,7 @@
 % Konum : Akilli_Sayac/simulink/testler/test_D_koruma.m
 % Çalıştırma: Current Folder'ı "testler" yapın ve  test_D_koruma  yazın (~2 dk).
 %
-% Koruma 'normal' modda (AKTİF) altı senaryoda test edilir:
+% Koruma 'normal' modda (AKTİF), batarya KAPALI, altı senaryoda test edilir:
 %   S1 Normal çalışma           – su ısıtıcı 17:00'ye alınır, aşım yok
 %   S2 Kısa süreli aşım         – su ısıtıcı ile fırın yalnızca 2 dk çakışır
 %   S3 Kalıcı aşım              – referans gün (18:00–18:10 çakışma), bağlanma isteği YOK
@@ -43,7 +43,7 @@ istek = @(saat) deal([0 saat saat+dk 25], [0 1 0 0]);    % tek darbelik yetkili 
 
 %% Senaryo tanımları
 S = struct('ad', {}, 'sen', {});
-s = struct('test_modu', 'normal');
+s = struct('test_modu', 'normal', 'batarya_aktif', 0);   % koruma senaryoları bataryasız
 s1 = s;  s1.kettle_t = [0 7 7+10*dk 17 17+10*dk 25];  s1.kettle_u = ref_kettle_u;
 s2 = s;  s2.kettle_t = [0 7 7+10*dk 18 18+2*dk 25];   s2.kettle_u = ref_kettle_u;
 s3 = s;  % referans gün, istek yok

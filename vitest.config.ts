@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["apps/**/*.test.ts", "packages/**/*.test.ts"],
+    include: ["apps/*/src/**/*.test.ts", "packages/*/src/**/*.test.ts"],
     reporters: ["default"],
     testTimeout: 10_000,
   },

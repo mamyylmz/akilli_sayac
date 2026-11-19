@@ -1,7 +1,9 @@
 # Test ve Doğrulama Sonuçları
 
-Doğrulama tarihi: 19 Kasım 2026  
-İncelenen kaynak commit: `a005f26580549d4f65435c7d8085dd7007ca6401`  
+Doğrulama tarihi: 19 Kasım 2026
+
+İncelenen kaynak commit: `a005f26580549d4f65435c7d8085dd7007ca6401`
+
 Yerel dal: `feature/software-foundation-security`
 
 ## Ortam

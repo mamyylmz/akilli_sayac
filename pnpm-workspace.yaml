@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+catalogMode: strict
+
+minimumReleaseAge: 1440
+
+onlyBuiltDependencies: []

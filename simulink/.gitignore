@@ -1,0 +1,15 @@
+# --- Akıllı Sayaç / Simulink klasörü ---
+# MATLAB ve Simulink'in geçici dosyaları
+slprj/
+*.slxc
+*.autosave
+*.asv
+*.mexw64
+# Açık Excel dosyalarının kilit dosyaları
+~$*
+
+# Yerel tarihli model yedekleri (Git her sürümü zaten saklar)
+yedekler/
+
+# Raporlarda ekip üyelerinin öğrenci numaraları var: herkese açık depoya konmaz
+raporlar/

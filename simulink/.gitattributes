@@ -1,0 +1,8 @@
+# Simulink modeli ve Excel dosyaları ikilidir: satır sonu dönüşümü ve satır bazlı birleştirme yapılmaz
+*.slx   binary
+*.slxc  binary
+*.mat   binary
+*.xlsx  binary
+# Metin dosyaları
+*.m     text
+*.md    text

@@ -1,6 +1,6 @@
 # Güç Kalitesi Olay Kaydı
 
-20-Nov-2026 15:24:59
+20-Nov-2026 17:14:40
 
 | Olay | Gerçek başlangıç | Algılandı | Bitti (algılanan) | Süre (dk) | V min (V) | V max (V) | Güç | Sistem tepkisi |
 |---|---|---|---|---|---|---|---|---|

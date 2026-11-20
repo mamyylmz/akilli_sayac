@@ -1,6 +1,6 @@
 # Akıllı Sayaç – Güç Kalitesi Testleri (E aşaması)
 
-- Tarih: 20-Nov-2026 15:24:59
+- Tarih: 20-Nov-2026 17:14:40
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Mod: normal (koruma aktif), batarya kapalı
 - Özet: **26 GEÇTİ, 0 KALDI**

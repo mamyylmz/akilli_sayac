@@ -1,6 +1,6 @@
 # Akıllı Sayaç – D Aşaması Koruma Testleri
 
-- Tarih: 19-Nov-2026 21:03:43
+- Tarih: 20-Nov-2026 12:48:18
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Model: Akilli_Sayac.slx, çalışma modu: normal (koruma aktif)
 - Parametreler: P_sinir = 4000 W, P_geri = 3800 W, t_uyari = 1 dk, t_asim = 3 dk, t_bekle = 5 dk, V = 207–253 V, t_kararli = 60 ms (3 periyot)

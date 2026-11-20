@@ -53,7 +53,7 @@ tm = 'kWh_birim_testi';
 if bdIsLoaded(tm), close_system(tm, 0); end
 new_system(tm);
 add_block('simulink/Sources/Constant',        [tm '/P'],     'Value', '1000');
-add_block('simulink/Math Operations/Gain',    [tm '/k'],     'Gain',  'k_kWh');
+add_block('simulink/Math Operations/Gain',    [tm '/k'],     'Gain',  mat2str(k_kWh, 17));   % sayı olarak: test başka bir çalışma alanından çağrılsa da çalışır
 add_block('simulink/Continuous/Integrator',   [tm '/E']);
 add_block('simulink/Sinks/To Workspace',      [tm '/kayit'], 'VariableName', 'E_birim', 'SaveFormat', 'Array');
 add_line(tm, 'P/1', 'k/1');  add_line(tm, 'k/1', 'E/1');  add_line(tm, 'E/1', 'kayit/1');

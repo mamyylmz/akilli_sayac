@@ -121,3 +121,128 @@ Test senaryosunda `t_kesme = 23`: ana röle 23:00'te açılır ve gün sonuna ka
 - Röle açık direnç yolu 1e-8 S → I ≈ 230 · 1e-8 = 2,3 µA ≈ **0**. Bu yüzden P ≈ 0 ve Q ≈ 0.
 - Gerilim **şebeke tarafında** ölçüldüğü için V_rms = **230 V** kalır. Böylece "röle açık" (V var) ile "şebeke kesildi" (V yok) durumları ayırt edilebilir (D aşaması).
 - Enerji sayacı 23:03–24:00 arasında **artmamalıdır**.
+
+## 13. D aşaması – koruma senaryoları (test_D_koruma.m)
+
+### Zaman ölçekleri
+| Ölçek | Kapsam | Dönüşüm |
+|---|---|---|
+| Profil | Cihaz programları, tarife, enerji, koruma zamanlayıcıları | 1 s sim = 1 saat; 1 profil dk = 16,7 ms sim |
+| Fiziksel | 50 Hz dalga, RMS/güç ölçüm penceresi, geçiciler, gerilim kararlılık penceresi | 1 periyot = 20 ms sim = 1,2 profil dk |
+
+Gerilim kararlılık penceresi `t_kararli` = 3 periyot = 60 ms sim ≈ 3,6 profil dk. Gerçek dünyadaki 3 s şartının birebir karşılığı değildir; ölçüm penceresinin 3 katı olarak seçilmiş simülasyon penceresidir (Muhammed Yılmaz onayı, 19.11.2026).
+
+### Parametreler
+P_sinir = 4000 W, P_geri = 3800 W, t_uyari = 1 dk, t_asim = 3 dk, t_bekle = 5 dk (profil), V_min–V_max = 207–253 V, V_kesinti = 23 V, Ts_kontrol = 1 ms.
+
+### Aşımın başlama anı (S2–S6)
+18:00'de su ısıtıcı ve fırın birlikte açılır: P 149 W'tan 4544 W'a çıkar. Güç ölçümü bir periyotluk kayan ortalamadır; ölçülen değer 4000 W'ı, pencerenin şu kadarı yeni yükle dolunca geçer:
+
+(4000 − 149) / (4544 − 149) = 0,876 → 0,876 × 20 ms = 17,5 ms = **1,05 profil dk**
+
+- Aşım başlangıcı ≈ 18:01,05
+- Uyarı = başlangıç + t_uyari ≈ **18:02,05**
+- Kesme = başlangıç + t_asim ≈ **18:04,05** (+ en fazla 1 örnekleme, 0,06 dk) → testte beklenen 18:04,1 ± 0,25 dk
+
+### Tahmini yük (cihaz programlarından, `tahmin_P`)
+| Saatten itibaren | 00:00 | 07:00 | 07:10 | 18:00 | 18:10 | 19:00 | 20:00 | 20:30 | 22:30 | 23:00 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Tahmini yük (W) | 150 | 2150 | 150 | **4550** | **2550** | 1633 | 2773 | 1373 | 2693 | 1553 |
+
+### Senaryolar ve beklenen sonuçlar
+| Senaryo | Kurulum | Beklenen |
+|---|---|---|
+| S1 Normal | Su ısıtıcı 17:00–17:10 | Günün en büyük yükü 2773 W (20:00–20:30) < 4000 W: uyarı ve kesme yok; günlük enerji 14,56 kWh (değişmez) |
+| S2 Kısa aşım | Su ısıtıcı 18:00–18:02 | Aşım ≈ 18:01,05–18:02,3 (≈ 1,3 dk < 3 dk): uyarı 18:02,05, kesme yok |
+| S3 Kalıcı aşım | Referans gün, istek yok | Kesme ≈ 18:04,1; I = P = 0, V = 230 V; onay gelmediği için röle gün sonuna kadar açık; durum 2 |
+| S4 Güvenli bağlantı | S3 + 18:15'te istek | Bekleme 18:15 − 18:04,1 = 10,9 dk ≥ 5 ✓; tahmini yük 2550 ≤ 3800 ✓; gerilim 230 V, kararlı ✓ → **KABUL**; 18:30'da P = 2547 W (fırın + baz) |
+| S5 Red | S3 + 18:06'da istek | Bekleme 1,9 dk < 5 (1) ve tahmini yük 4550 > 3800 (2) → **RED, maske 3**; koşullar 18:10'dan sonra sağlansa da röle kendiliğinden kapanmaz |
+| S6 Gerilim arızası | S4 + 18:12–18:20 arası 190 V | 18:15'te V = 190 V < 207 V → **RED, maske 4**; durum 5; gerilim düzelince de röle açık kalır |
+
+## 14. Batarya (test_B_batarya.m)
+
+### Parametreler (varsayım, ev tipi)
+E_bat = 5 kWh, SOC 0,10–0,95, şarj 1500 W (yalnızca T3), deşarj en fazla 2500 W (yalnızca T2), verim 0,95 / 0,95, SOC_0 = 0,63.
+
+Kurallar: şarj ≤ P_geri − tahmini yük (bağlantı gücü aşılmasın), deşarj ≤ tahmini yük (şebekeye enerji verilmez), röle açıkken batarya durur.
+
+SOC değişimi (t profil saati, P watt): dSOC/dt = (P_şarj·0,95 − P_deşarj/0,95) / 5000
+
+### Gün boyunca doluluk (SOC)
+| Aralık | Batarya gücü | SOC değişimi | SOC (aralık sonu) |
+|---|---|---|---|
+| 00:00 → dolana kadar | −1500 W (şarj) | +0,285 / saat | 0,95 (01:07'de; (0,95 − 0,63)/0,285 = 1,12 saat) |
+| 01:07–17:00 | 0 | — | 0,95 |
+| 17:00–18:00 | +150 W (baz yük kadar) | −0,0316 | **0,9184** |
+| 18:00–18:10 | +2500 W | −0,0877 | 0,8307 |
+| 18:10–19:00 | +2500 W | −0,4386 | **0,3921** |
+| 19:00 → boşalana kadar | +1633 W | −0,3438 / saat | 0,10 (19:51'de; 0,2921/0,3438 = 0,85 saat) |
+| 22:00–22:30 | −1500 W | +0,1425 | 0,2425 |
+| 22:30–23:00 | −1107 W (3800 − 2693, kısıldı) | +0,1052 | 0,3477 |
+| 23:00–24:00 | −1500 W | +0,285 | **0,6326** (günün başındaki 0,63'e eşit: kararlı gün) |
+
+### Şebekeden çekilen güç ve enerji
+- 18:05: 4544 − 2500 = **≈ 2044 W** (bataryasız 4544 W → koruma kesiyordu; bataryayla kesme yok)
+- 22:45: 2693 + 1107 = **3800 W** (şarj P_geri'ye kısıldığı için bağlantı gücü aşılmaz)
+- Batarya puantta 4,04 kWh verir; bunun için şebekeden 4,49 kWh şarj çekilir → kayıp ≈ 0,45 kWh
+
+| Sayaç | Bataryasız | Bataryalı (beklenen) |
+|---|---|---|
+| T1 | 1,977 | 1,977 |
+| T2 | 8,103 | **4,072** |
+| T3 | 4,479 | **8,970** |
+| Toplam | 14,56 | **15,02** |
+
+Not: Tahmini yük cihazların anma güçleriyle (baz 150 W) hesaplanır; gerçek baz tüketim 149,5 W olduğu için deşarj sırasında şebekeye ≈ 0,5 W'lık bir taşma olur (gün boyu ≈ 0,001 kWh). Test toleransı 0,002 kWh'tir.
+
+## 15. Güç kalitesi olayları (test_E_guc_kalitesi.m)
+
+Tek simülasyonda üç olay (koruma aktif, batarya kapalı; 18:00 aşırı güç kesmesi karışmasın diye su ısıtıcının akşam kullanımı 17:00'ye alınır):
+
+| Olay | Gerçek zaman | Şebeke gerilimi | Evdeki yük (olay öncesi) |
+|---|---|---|---|
+| E1 Kesinti | 12:30–12:40 | 0 V | baz yük (149,5 W) |
+| E2 Gerilim çökmesi | 20:10–20:20 | 0,80 × 230 = 184 V | baz + TV + çamaşır + klima ≈ 2770 W |
+| E3 Gerilim yükselmesi | 21:10–21:20 | 1,15 × 230 = 264,5 V | baz + TV + klima ≈ 1371 W |
+
+### Algılama gecikmesi (RMS penceresi)
+RMS ölçümü bir periyotluk pencerenin ortalama karesidir. Gerilim V₁'den V₂'ye basamakla değişince pencerenin x kadarı yeni değerle dolduğunda ölçülen değer √((1−x)·V₁² + x·V₂²) olur. Eşiği geçiş anı:
+
+x = (V₁² − V_eşik²) / (V₁² − V₂²),  gecikme = x × 20 ms = x × 1,2 profil dk
+
+| Geçiş | Eşik | x | Gecikme (profil dk) |
+|---|---|---|---|
+| 230 → 0 V (kesinti başı) | 23 V | 0,99 | **1,19** |
+| 0 → 230 V (kesinti sonu) | 23 V | 0,01 | **0,01** |
+| 230 → 184 V (çökme başı) | 207 V | 0,528 | **0,63** |
+| 184 → 230 V (çökme sonu) | 207 V | 0,472 | **0,57** |
+| 230 → 264,5 V (yükselme başı) | 253 V | 0,651 | **0,78** |
+| 264,5 → 230 V (yükselme sonu) | 253 V | 0,349 | **0,42** |
+
+Ölçülen süreler: kesinti 10 − 1,19 + 0,01 = **8,82 dk** (kesinti eşiği 23 V çok düşük olduğu için başlangıç geç algılanır; gerilimin 207 V altına inişi 0,23 dk'da algılanır), çökme 10 − 0,63 + 0,57 = **9,94 dk**, yükselme 10 − 0,78 + 0,42 = **9,64 dk**.
+
+### Ölçülen büyüklükler
+Bütün yükler doğrusal empedans olduğu için güç gerilimin karesiyle değişir: P(olay)/P(önce) = (V/230)²
+- Çökme: (184/230)² = **0,64** → ≈ 2770 → 1773 W
+- Yükselme: (264,5/230)² = **1,3225** → ≈ 1371 → 1813 W (4 kW sınırının altında)
+- Kesinti: P = 0, enerji sayacı durur
+
+### Sistemin tepkisi
+Olay kodları (40/41 kesinti, 42/43 aralık dışı) ve durum kodları (4 şebeke yok, 5 gerilim aralık dışı) kaydedilir. Gerilim olayları röleyi açmaz (proje kararlarında gerilim nedeniyle kesme yok); röle açıksa gerilim olayı yeniden bağlantıyı engeller (D aşaması S6).
+
+## 16. Talep yönetimi (test_F_talep.m)
+
+Çamaşır makinesi (1400 W, cos φ = 0,80, 1,5 saat) 19:00–20:30 (T2) yerine 02:00–03:30 (T3) çalıştırılır. İki çalıştırma da `measurement_test` modundadır (koruma ve batarya kapalı).
+
+- Kaydırılan enerji: 1400 W × 1,5 saat = **2,1 kWh** → T2 2,1 kWh azalır, T3 2,1 kWh artar
+- T1 ve günlük toplam değişmez; endüktif reaktif enerji (1050 VAR × 1,5 h = 1,575 kVARh) de yalnızca yer değiştirir
+- 20:15'te şebeke gücü 1400 W azalır, 02:30'da 1400 W artar
+
+| Sayaç | Referans | Kaydırılmış (beklenen) |
+|---|---|---|
+| T1 | 1,977 | 1,977 |
+| T2 | 8,103 | **6,003** |
+| T3 | 4,479 | **6,579** |
+| Toplam | 14,56 | 14,56 |
+
+TL farkı yazılım katmanında hesaplanır: ΔTL = 2,1 kWh × (T2 birim fiyatı − T3 birim fiyatı).

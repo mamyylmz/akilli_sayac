@@ -1,6 +1,6 @@
 # Olay Kayıtları – D Aşaması Senaryoları
 
-20-Nov-2026 12:48:18
+20-Nov-2026 15:23:58
 
 | Senaryo | Saat | Kod | Olay | Red nedeni | P ölçülen (W) | P tahmin (W) | V (V) |
 |---|---|---|---|---|---|---|---|

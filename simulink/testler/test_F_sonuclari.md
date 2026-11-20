@@ -1,6 +1,6 @@
 # Akıllı Sayaç – Talep Yönetimi Testi (F aşaması)
 
-- Tarih: 20-Nov-2026 12:57:10
+- Tarih: 20-Nov-2026 15:25:31
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Mod: measurement_test (koruma ve batarya kapalı)
 - Senaryo: çamaşır makinesi (1400 W, 1,5 saat) 19:00–20:30 → 02:00–03:30

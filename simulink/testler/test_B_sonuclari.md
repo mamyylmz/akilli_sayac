@@ -1,6 +1,6 @@
 # Akıllı Sayaç – Batarya Testleri
 
-- Tarih: 20-Nov-2026 12:52:30
+- Tarih: 20-Nov-2026 15:24:39
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Model: Akilli_Sayac.slx
 - Batarya: 5 kWh, SOC 0.1–0.95, şarj 1500 W (T3), deşarj en fazla 2500 W (T2), verim 0.95 / 0.95, SOC_0 = 0.63

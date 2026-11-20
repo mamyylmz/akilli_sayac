@@ -1,10 +1,10 @@
 # Akıllı Sayaç – Doğrulama Sonuçları (A–C aşamaları)
 
-- Tarih: 20-Nov-2026 12:39:04
+- Tarih: 20-Nov-2026 15:22:26
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Model: Akilli_Sayac.slx
-- 1. çalıştırma: normal gün, measurement_test modu (koruma devre dışı, test yükleri kapalı), 75.1 s
-- 2. çalıştırma: test senaryosu, measurement_test modu (kondansatör 03:00–04:00, ana röle 23:00'te açık), 81.8 s
+- 1. çalıştırma: normal gün, measurement_test modu (koruma devre dışı, test yükleri kapalı), 14.5 s
+- 2. çalıştırma: test senaryosu, measurement_test modu (kondansatör 03:00–04:00, ana röle 23:00'te açık), 12.8 s
 - Özet: **93 GEÇTİ, 0 KALDI, 0 BEKLİYOR**
 
 | Test | Kontrol | Birim | Beklenen | Gerçekleşen | Hata | Tolerans | Sonuç |

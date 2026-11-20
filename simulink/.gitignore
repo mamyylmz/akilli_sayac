@@ -13,3 +13,7 @@ yedekler/
 
 # Raporlarda ekip üyelerinin öğrenci numaraları var: herkese açık depoya konmaz
 raporlar/
+
+# veri_aktar çıktıları (üretilen veri). Depoya girip girmeyeceğine yazılım ekibi karar verecek
+# (veri sözleşmesi K4). Test verisi ciktilar/test/ hiçbir zaman depoya girmez.
+ciktilar/

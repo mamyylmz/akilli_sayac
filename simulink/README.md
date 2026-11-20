@@ -17,6 +17,9 @@
 | `testler/test_E_guc_kalitesi.m` | E aşaması: kesinti, gerilim çökmesi ve yükselmesi; olay başlangıcı, süresi, ölçülen değerler, sistem tepkisi |
 | `testler/test_F_talep.m` | F aşaması: çamaşır makinesini gece tarifesine kaydırma (enerji korunur, T2 → T3) |
 | `testler/tum_testler.m` | Bütün testleri sırayla çalıştırıp genel özet verir |
+| `veri_aktar.m` | Yazılıma veri aktarımı: modeli bir gün çalıştırır, 1 dakikalık CSV + olay kaydı + meta JSON yazar (`ciktilar/`) |
+| `veri_sozlesmesi_taslak.md` | Aktarılan verinin sütunları, birimleri ve kuralları (TASLAK 0.1, yazılım ekibiyle kesinleşecek) |
+| `ciktilar/model/`, `ciktilar/test/` | `veri_aktar` çıktıları; normal gün ve test senaryoları ayrı klasörde. Şimdilik depoya gönderilmez (`.gitignore`); yazılım ekibinin kararı bekleniyor |
 | `testler/test_sonuclari.md` / `.xlsx` | Betiğin ürettiği sonuçlar: her ölçüm ayrı satırda, sayısal sütunlar (beklenen / gerçekleşen / fark / hata / sonuç) |
 | `testler/teorik_hesaplar.md` | Beklenen değerlerin hesabı (zaman dilimi bazında P, Q, S, kWh, kVARh; kapasitif test yükü; röle testi) |
 | `testler/C_asamasi_dogrulama.xlsx` | Formüllü doğrulama çalışma kitabı (C aşaması, 18.11.2026 çalıştırması): cihaz hesapları, dilim bazında enerji, tarife dağılımı |
@@ -31,6 +34,7 @@
 3. Sonuçlar: **Scope1** (I_rms, P, Q, V_rms), **Enerji_Scope**, **GucFaktoru_Scope**, Display blokları ve **HAN – Ev İçi Müşteri Ekranı** (Dashboard).
 4. Sunum için: SIMULATION › Run (▼) › Simulation Pacing › hız 1 → bir gün 24 saniyede, HAN ekranı canlı izlenir.
 5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~6 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
+6. **Yazılıma veri aktarımı:** Modeli kaydedin. `simulink` klasöründeyken `veri_aktar` yazın (~1 dk). Dosyalar `ciktilar/model/` klasörüne yazılır. Ayrıntı: `veri_sozlesmesi_taslak.md`.
 
 Gereken araç kutuları: Simulink, Simscape, Simscape Electrical.
 Model daha yeni bir MATLAB sürümünde kaydedildi. Daha eski sürümde açılmazsa haber verin, eski sürüme dışa aktarılabilir.
@@ -169,7 +173,7 @@ Olay kodları: 10/11 uyarı başladı/bitti, 20 kesme, 30/31 bağlantı kabul/re
 Tamamlandı: A–C (93 test), D aşaması koruma ve röle mantığı (39 test), ev tipi batarya.
 
 1. E (güç kalitesi) ve F (talep yönetimi) test betikleri hazır: `test_E_guc_kalitesi`, `test_F_talep`
-2. Yazılıma veri aktarımı (CSV/JSON), veri sözleşmesi kesinleşince
+2. Yazılıma veri aktarımı: `veri_aktar` hazır (şema 0.1-TASLAK, 20.11.2026). Veri sözleşmesi yazılım ekibiyle kesinleşecek (`veri_sozlesmesi_taslak.md` §8)
 3. İsteğe bağlı (P2): THD/harmonik, aşırı gerilimde röle açma (ekip kararı gerekir)
 
 TL cinsinden fatura: yazılım katmanı (T1/T2/T3 sayaç değerlerini kullanır).

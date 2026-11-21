@@ -41,6 +41,7 @@ Test dosyalarının meta dosyasında senaryonun hangi değerleri değiştirdiği
 
 - **İlk iki satır (00:00 ve 00:01) `gecerli = 0`:** Gerilim, akım ve güç bir periyotluk (20 ms = 1,2 profil dakikası) pencereyle ölçülür. Pencere dolmadan V, I ve S eksik görünür (00:00'da V = 0). Bu satırlar "şebeke yok" diye yorumlanmamalı.
 - **Puantta küçük negatif değerler:** Batarya evin bütün yükünü karşıladığında şebeke gücü sıfıra iner. Batarya tahmini yüke göre çalıştığı için `p_W` ve `e_aralik_kWh` birkaç watt kadar negatif olabilir (en düşük −1,1 W). Yazılım küçük negatif değerleri kabul etmeli.
+- **Kesintide V, I, S = 0:** Gerilim sıfırken RMS hesabı sıfıra çok yakın bir sayının karekökünü alır ve sayısal gürültüden NaN çıkabilir. Gerçek değer 0 olduğu için 0 yazılır; meta dosyasının `notlar` alanında belirtilir.
 - **cos φ ≈ 0:** Aynı dakikalarda şebekeden neredeyse yalnızca reaktif güç çekildiği için `cos_phi` sıfıra yakındır. Bu fiziksel olarak doğrudur.
 
 ## 4. Ölçüm dosyası: `olcum_1dk_<gün>.csv`
@@ -124,7 +125,8 @@ Normal günde (bataryalı) güç 4 kW sınırını aşmadığı için olay dosya
 | `dakika_sayisi_dilim` | Her tarife diliminin dakika sayısı (660 / 300 / 480) |
 | `sutunlar` | Her sütunun adı, birimi, değer türü ve açıklaması |
 | `kontroller` | Betiğin yaptığı tutarlılık kontrolleri ve sonuçları |
-| `uyarilar` | Varsa veri düzeltmeleri (ör. sayısal olmayan örnek) |
+| `uyarilar` | Beklenmeyen veri sorunları (varsa kontrol düşer) |
+| `notlar` | Bilinen, zararsız durumlar (ör. kesintide RMS hesabının 0 yazılan NaN örnekleri) |
 
 ## 7. Yazılım tarafı için öneriler
 

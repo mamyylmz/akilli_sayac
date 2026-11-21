@@ -18,6 +18,7 @@
 | `testler/test_F_talep.m` | F aşaması: çamaşır makinesini gece tarifesine kaydırma (enerji korunur, T2 → T3) |
 | `testler/tum_testler.m` | Bütün testleri sırayla çalıştırıp genel özet verir |
 | `veri_aktar.m` | Yazılıma veri aktarımı: modeli bir gün çalıştırır, 1 dakikalık CSV + olay kaydı + meta JSON yazar (`ciktilar/`) |
+| `gosteri_gunu.m` | Sunum için hazır senaryo: kesinti, aşırı güç kesmesi, iki red + kabul, gerilim çökmesi/yükselmesi, kullanıcı kesmesi tek günde. `gosteri_gunu` (canlı izleme), `gosteri_gunu('veri')` (olaylı TEST verisi + 13 kontrol + grafik), `gosteri_gunu('kapat')` |
 | `veri_sozlesmesi_taslak.md` | Aktarılan verinin sütunları, birimleri ve kuralları (TASLAK 0.1, yazılım ekibiyle kesinleşecek) |
 | `ciktilar/model/`, `ciktilar/test/` | `veri_aktar` çıktıları; normal gün ve test senaryoları ayrı klasörde. Şimdilik depoya gönderilmez (`.gitignore`); yazılım ekibinin kararı bekleniyor |
 | `testler/test_sonuclari.md` / `.xlsx` | Betiğin ürettiği sonuçlar: her ölçüm ayrı satırda, sayısal sütunlar (beklenen / gerçekleşen / fark / hata / sonuç) |
@@ -35,6 +36,7 @@
 4. Sunum için: SIMULATION › Run (▼) › Simulation Pacing › hız 1 → bir gün 24 saniyede, HAN ekranı canlı izlenir.
 5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~6 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
 6. **Yazılıma veri aktarımı:** Modeli kaydedin. `simulink` klasöründeyken `veri_aktar` yazın (~1 dk). Dosyalar `ciktilar/model/` klasörüne yazılır. Ayrıntı: `veri_sozlesmesi_taslak.md`.
+7. **Sunum / gösteri günü:** `gosteri_gunu` yazın, modelde Run'a basın ve HAN ekranını izleyin (Simulation Pacing hızı 0.1 önerilir). Bitince `gosteri_gunu('kapat')`. Olaylı test verisi ve grafik için: `gosteri_gunu('veri')`.
 
 Gereken araç kutuları: Simulink, Simscape, Simscape Electrical.
 Model daha yeni bir MATLAB sürümünde kaydedildi. Daha eski sürümde açılmazsa haber verin, eski sürüme dışa aktarılabilir.

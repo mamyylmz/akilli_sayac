@@ -1,4 +1,4 @@
-function veri_aktar(varargin)
+function sonuc = veri_aktar(varargin)
 %VERI_AKTAR  Akıllı Sayaç modelini bir gün çalıştırır, sonuçları yazılım tarafı için
 %   1 dakikalık CSV olarak yazar.
 % Konum : Akilli_Sayac/simulink/veri_aktar.m
@@ -7,6 +7,7 @@ function veri_aktar(varargin)
 %   veri_aktar                              % bugünün tarihi, sayaç SIM-0001
 %   veri_aktar('gun', '2026-11-26')         % başka bir tarih
 %   veri_aktar('sayac_id', 'SIM-0002')      % başka bir sayaç kimliği
+%   s = veri_aktar;                         % dosya yolları ve kontrol sonucu da döner (gosteri_gunu kullanır)
 %
 % ŞEMA SÜRÜMÜ 0.1-TASLAK: sütun adları ve biçim yazılım ekibiyle (Muhammed) birlikte
 % kesinleşecek. Ayrıntılı açıklama: veri_sozlesmesi_taslak.md
@@ -100,7 +101,8 @@ kayit = { 'RMS Measurement',    1, 'Vrms';
 fprintf('Model çalışıyor (%s, %s verisi)...\n', mdl, veriTuru);
 [logs, sure] = modeliCalistir(mdl, kayit);
 
-uyarilar = {};
+uyarilar = {};   % beklenmeyen veri sorunları (kontrolü düşürür)
+notlar   = {};   % bilinen, zararsız durumlar (bilgi)
 S = struct();
 for j = 1:size(kayit,1)
     ad = kayit{j,3};
@@ -109,8 +111,22 @@ for j = 1:size(kayit,1)
     x  = double(squeeze(el.Values.Data));  x = x(:);
     kotu = ~isfinite(x);
     if any(kotu)
-        uyarilar{end+1} = sprintf('%s: %d örnek sayısal değil (NaN/Inf), 0 alındı', ad, nnz(kotu)); %#ok<AGROW>
+        % RMS bloğu, sıfıra çok yakın bir değerin karekökünü alırken (kesinti, açık röle) sayısal
+        % gürültüden dolayı NaN verebilir. Gerçek değer 0'dır. NaN'ın hemen yanındaki örnekler
+        % sıfıra çok yakınsa bu bilinen durumdur (not); değilse veri sorunu sayılır (uyarı).
+        iyi = find(~kotu);
         x(kotu) = 0;
+        if numel(iyi) >= 2
+            yakin = interp1(iyi, x(iyi), find(kotu), 'nearest', 'extrap');
+            sifirda = all(abs(yakin) <= 1e-3 * max(abs(x(iyi))));
+        else
+            sifirda = false;
+        end
+        if sifirda
+            notlar{end+1} = sprintf('%s: %d örnek NaN (sıfıra çok yakın değerin karekökü, ör. kesintide); 0 alındı', ad, nnz(kotu)); %#ok<AGROW>
+        else
+            uyarilar{end+1} = sprintf('%s: %d örnek sayısal değil (NaN/Inf), 0 alındı', ad, nnz(kotu)); %#ok<AGROW>
+        end
     end
     S.(ad) = struct('t', t, 'x', x);
 end
@@ -262,7 +278,7 @@ ePort = sum(P) / 60 / 1000;                                    % W·(1/60 saat) 
 d = abs(ePort - eTop(end)) / max(eTop(end), eps);
 K(end+1,:) = {'Ortalama güçten enerji = sayaç enerjisi', d < 1e-3, sprintf('bağıl fark %.2e', d)};
 K(end+1,:) = {'Her dakikada tek tarife dilimi', all(tekDilim), sprintf('%d dakika sorunlu', nnz(~tekDilim))};
-K(end+1,:) = {'Sayısal olmayan değer yok', isempty(uyarilar), sprintf('%d sinyalde düzeltme', numel(uyarilar))};
+K(end+1,:) = {'Beklenmeyen sayısal olmayan değer yok', isempty(uyarilar), sprintf('%d sinyalde sorun, %d bilinen durum', numel(uyarilar), numel(notlar))};
 nGec = nnz([K{:,2}]);
 
 %% Meta dosyası
@@ -289,6 +305,7 @@ meta.dosyalar            = struct('olcum', olcumAd, 'olaylar', olayAd);
 meta.sutunlar            = cell2struct(sutun, {'ad', 'birim', 'deger', 'aciklama'}, 2);
 meta.kontroller          = cell2struct(K, {'kontrol', 'gecti', 'deger'}, 2);
 meta.uyarilar            = uyarilar;
+meta.notlar              = notlar;
 metaAd = sprintf('meta_%s%s.json', gun, ek);
 fid = fopen(fullfile(cikisDir, metaAd), 'w', 'n', 'UTF-8');
 if fid < 0, error('Dosya açılamadı: %s', metaAd); end
@@ -303,11 +320,18 @@ for k = 1:size(K,1)
     if K{k,2}, s = 'GEÇTİ'; else, s = 'KALDI'; end
     fprintf('  [%s] %s (%s)\n', s, K{k,1}, K{k,3});
 end
-for k = 1:numel(uyarilar), fprintf('  Not: %s\n', uyarilar{k}); end
+for k = 1:numel(uyarilar), fprintf('  UYARI: %s\n', uyarilar{k}); end
+for k = 1:numel(notlar),   fprintf('  Not: %s\n', notlar{k}); end
 fprintf('  Kontroller: %d/%d geçti\n', nGec, size(K,1));
 fprintf('  Dosyalar: ciktilar/%s/%s, %s, %s\n', veriTuru, olcumAd, olayAd, metaAd);
 if senaryoVar
     fprintf('  HATIRLATMA: test_senaryo hâlâ tanımlı. Normal güne dönmek için:  clear test_senaryo\n');
+end
+if nargout > 0
+    sonuc = struct('veri_turu', veriTuru, 'klasor', cikisDir, ...
+                   'olcum', fullfile(cikisDir, olcumAd), 'olaylar', fullfile(cikisDir, olayAd), ...
+                   'meta', fullfile(cikisDir, metaAd), ...
+                   'kontroller_gecti', nGec == size(K,1), 'olay_sayisi', numel(ot));
 end
 end
 

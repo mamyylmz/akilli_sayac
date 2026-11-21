@@ -64,7 +64,7 @@ Model daha yeni bir MATLAB sürümünde kaydedildi. Daha eski sürümde açılma
 | Güç faktörü | Fcn: P / √(P² + Q²) | Anlık cos φ (işaretsiz) |
 | Görünür güç | Product `Gorunur_Guc`: V_rms · I_rms | S (VA) |
 | Kapasitif test yükü | Alt sistem `Kapasitif_Test_Yuku` (anahtar + 60,17 µF) | **Normal günde kapalı.** Yalnızca T12 testinde 03:00–04:00 açılır |
-| HAN ekranı | Dashboard: Gauge, Lamp, Display | Puant lambası 17–22 arası kırmızı |
+| HAN ekranı | Dashboard: Gauge, Lamp, Display, Scope | Puant lambası 17–22 arası kırmızı. Anlık güç göstergesinde 3800–4000 W sarı, 4000–5000 W kırmızı bölge: **P_geri ve P_sinir değerlerine göre elle girildi; bu parametreler değişirse gösterge de güncellenmeli.** Grafik renkleri sabit: şebeke mavi `#1A59BF`, batarya turuncu `#D9661A` |
 
 ## 5. Sinyaller (Goto etiketleri)
 

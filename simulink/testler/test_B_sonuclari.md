@@ -1,6 +1,6 @@
 # Akıllı Sayaç – Batarya Testleri
 
-- Tarih: 20-Nov-2026 17:14:22
+- Tarih: 21-Nov-2026 18:03:01
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Model: Akilli_Sayac.slx
 - Batarya: 5 kWh, SOC 0.1–0.95, şarj 1500 W (T3), deşarj en fazla 2500 W (T2), verim 0.95 / 0.95, SOC_0 = 0.63
@@ -10,13 +10,13 @@
 |---|---|---|---|---|---|---|---|
 | B1 | Aşırı güç kesmesi sayısı (batarya tepeyi düşürdü) | adet | 0 | 0 | 0 | ±0 | GEÇTİ |
 | B1 | Gün boyu şebekeden çekilen P < P_sinir (1 = evet) | - | 1 | 1 | 0 | ±0 | GEÇTİ |
-| B1 | 18:05 şebeke gücü (4544 − 2500 deşarj) | W | 2044 | 2045.87 | %0.092 | %2 | GEÇTİ |
+| B1 | 18:05 şebeke gücü (4544 − 2500 deşarj) | W | 2044 | 2045.86 | %0.091 | %2 | GEÇTİ |
 | B1 | 22:45 şebeke gücü (şarj P_geri'ye kısıldı) | W | 3800 | 3796.46 | %0.093 | %1 | GEÇTİ |
-| B1 | Şebekeye verilen enerji (negatif P) | kWh | 0 | 0.00151326 | 0.00151 | ±0.002 | GEÇTİ |
-| B1 | T1 Gündüz sayacı | kWh | 1.977 | 1.98005 | %0.154 | %1 | GEÇTİ |
+| B1 | Şebekeye verilen enerji (negatif P) | kWh | 0 | 0.00151328 | 0.00151 | ±0.002 | GEÇTİ |
+| B1 | T1 Gündüz sayacı | kWh | 1.977 | 1.98008 | %0.156 | %1 | GEÇTİ |
 | B1 | T2 Puant sayacı | kWh | 4.072 | 4.05964 | %0.304 | %1 | GEÇTİ |
-| B1 | T3 Gece sayacı | kWh | 8.97 | 8.94223 | %0.310 | %1 | GEÇTİ |
-| B1 | Günlük enerji (14,56 + şarj/deşarj kaybı) | kWh | 15.02 | 14.9819 | %0.254 | %1 | GEÇTİ |
+| B1 | T3 Gece sayacı | kWh | 8.97 | 8.94224 | %0.309 | %1 | GEÇTİ |
+| B1 | Günlük enerji (14,56 + şarj/deşarj kaybı) | kWh | 15.02 | 14.982 | %0.253 | %1 | GEÇTİ |
 | B1 | SOC 02:00 (gece şarjı tamam) | - | 0.95 | 0.950055 | 5.5e-05 | ±0.002 | GEÇTİ |
 | B1 | SOC 18:00 | - | 0.9184 | 0.918476 | 7.61e-05 | ±0.003 | GEÇTİ |
 | B1 | SOC 19:00 | - | 0.3921 | 0.39216 | 6.03e-05 | ±0.005 | GEÇTİ |

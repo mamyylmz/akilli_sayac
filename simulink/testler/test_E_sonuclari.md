@@ -1,6 +1,6 @@
 # Akıllı Sayaç – Güç Kalitesi Testleri (E aşaması)
 
-- Tarih: 20-Nov-2026 17:14:40
+- Tarih: 21-Nov-2026 18:03:15
 - MATLAB: 26.2.0.3386108 (R2026b)
 - Mod: normal (koruma aktif), batarya kapalı
 - Özet: **26 GEÇTİ, 0 KALDI**
@@ -10,9 +10,9 @@
 | E1 | Kesinti (V < 23 V) - algılama başlangıcı (saat) | saat | 12.5198 | 12.519 | -0.000833 | ±0.00416667 | GEÇTİ |
 | E1 | Kesinti (V < 23 V) - algılama bitişi (saat) | saat | 12.6668 | 12.667 | 0.000167 | ±0.00416667 | GEÇTİ |
 | E1 | Kesinti (V < 23 V) - ölçülen süre (dk) | dk | 8.82 | 8.88 | 0.06 | ±0.5 | GEÇTİ |
-| E1 | Kesinti (V < 23 V) - olay sırasında V_rms | V | 0 | 7.62939e-05 | 7.63e-05 | ±0.5 | GEÇTİ |
+| E1 | Kesinti (V < 23 V) - olay sırasında V_rms | V | 0 | 0 | 0 | ±0.5 | GEÇTİ |
 | E1 | Kesinti (V < 23 V) - olay sırasında P | W | 0 | 0 | 0 | ±1 | GEÇTİ |
-| E1 | Kesinti (V < 23 V) - enerji sayacı artışı (durmalı) | kWh | 0 | 0 | 0 | ±0.0001 | GEÇTİ |
+| E1 | Kesinti (V < 23 V) - enerji sayacı artışı (durmalı) | kWh | 0 | -2.24265e-13 | -2.24e-13 | ±0.0001 | GEÇTİ |
 | E1 | Kesinti (V < 23 V) - durum kodu olay ortasında | - | 4 | 4 | 0 | ±0 | GEÇTİ |
 | E1 | Kesinti (V < 23 V) - röle kapalı kaldı (gerilim olayında kesme yapılmaz) | - | 1 | 1 | 0 | ±0 | GEÇTİ |
 | E1 | Kesinti (V < 23 V) - olay sonrası durum (0 = normal) | - | 0 | 0 | 0 | ±0 | GEÇTİ |

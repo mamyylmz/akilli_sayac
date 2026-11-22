@@ -277,7 +277,7 @@ function cizGrafik(T, E, dosya)
     plot(ax2, saat, T.v_rms_V, 'Color', [0.05 0.20 0.55], 'LineWidth', 2, 'DisplayName', 'Gerilim (RMS)');
     text(ax2, 12.5 + 15/60, 60,  'Kesinti 12:30–12:40 (0 V)', 'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.10 0.15 0.45]);
     text(ax2, 20 + 10/60, 150, 'Çökme 184 V (20:10)  →',      'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.80 0.40 0.05], 'HorizontalAlignment', 'right');
-    text(ax2, 21 + 25/60, 272, '←  Yükselme 264,5 V (21:10)',     'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.80 0.40 0.05]);
+    text(ax2, 21 + 5/60,  272, 'Yükselme 264,5 V (21:10)  →',     'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.80 0.40 0.05], 'HorizontalAlignment', 'right');
     ylabel(ax2, 'Gerilim (V)');  ylim(ax2, [0 300]);  xlim(ax2, [0 24]);  xticks(ax2, 0:2:24);
     legend(ax2, 'Location', 'southwest');
 

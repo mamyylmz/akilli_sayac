@@ -16,6 +16,7 @@
 | `testler/test_B_batarya.m` | Batarya: bataryalı gün, ada çalışma önleme, ölçüm testi modunda kapalı olma |
 | `testler/test_E_guc_kalitesi.m` | E aşaması: kesinti, gerilim çökmesi ve yükselmesi; olay başlangıcı, süresi, ölçülen değerler, sistem tepkisi |
 | `testler/test_F_talep.m` | F aşaması: çamaşır makinesini gece tarifesine kaydırma (enerji korunur, T2 → T3) |
+| `testler/test_G_kesinti_batarya.m` | G: kesinti + batarya regresyon testi (sıfır geçişi kilitlenmesi düzeltmesinin kontrolü) |
 | `testler/tum_testler.m` | Bütün testleri sırayla çalıştırıp genel özet verir |
 | `testler/test_sonuclari.md` / `.xlsx` | Betiğin ürettiği sonuçlar: her ölçüm ayrı satırda, sayısal sütunlar (beklenen / gerçekleşen / fark / hata / sonuç) |
 | `testler/teorik_hesaplar.md` | Beklenen değerlerin hesabı (zaman dilimi bazında P, Q, S, kWh, kVARh; kapasitif test yükü; röle testi) |
@@ -30,7 +31,7 @@
 2. `Akilli_Sayac.slx` modelini açın ve **Run**'a basın (5–10 sn sürer).
 3. Sonuçlar: **Scope1** (I_rms, P, Q, V_rms), **Enerji_Scope**, **GucFaktoru_Scope**, Display blokları ve **HAN – Ev İçi Müşteri Ekranı** (Dashboard).
 4. Sunum için: SIMULATION › Run (▼) › Simulation Pacing › hız 1 → bir gün 24 saniyede, HAN ekranı canlı izlenir.
-5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~6 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
+5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~7 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
 
 Gereken araç kutuları: Simulink, Simscape, Simscape Electrical.
 Model daha yeni bir MATLAB sürümünde kaydedildi. Daha eski sürümde açılmazsa haber verin, eski sürüme dışa aktarılabilir.
@@ -126,6 +127,7 @@ T1–T11 ilk olarak Scope ve Display değerleriyle elle doğrulandı. T4 ve T6�
 - Reaktif enerji değerleri (E_Rend, E_Rkap) yalnızca bu tek fazlı, sinüzoidal model varsayımları kapsamında geçerlidir.
 - **Test senaryosu:** Parametre dosyasının sonundaki bölüm, çalışma alanında `test_senaryo` adlı bir struct varsa onun alanlarını kullanır (ör. `test_senaryo.t_kesme = 23`). Test betiği bunu kendisi açar ve kapatır. Elle denediyseniz iş bitince `clear test_senaryo` yazın.
 - **cos φ işaretsizdir.** Kapasitif yükte de pozitif görünür; yükün endüktif mi kapasitif mi olduğunu Q'nun işareti gösterir.
+- **Sıfır geçişi (22.11.2026):** `Sadece_Enduktif` ve `Sadece_Kapasitif` (Q'yu sıfırda kesen Saturation blokları) sıfır geçişi algılaması **kapalıdır**. Bataryalı günde kesinti sırasında Q sıfır etrafında sayısal gürültüyle salınınca açık olan algılama 1000 ardışık sıfır geçişiyle simülasyonu durduruyordu. kVARh sayacına etkisi en fazla bir çözücü adımıdır. Regresyon testi: `test_G_kesinti_batarya`.
 - Test betiği çalışmadan önce modelin kaydedilmiş olmasını ister (kaydedilmemiş değişiklik test sonucunu belirsiz yapar).
 - Modeli kaydederken **Save As kullanmayın** (sizi yeni dosyaya geçirir). Yedekler `yedekler/` klasörüne tarihli adla kopyalanır. Dosya adlarında **nokta ve boşluk kullanmayın**; Simulink model adı olarak kabul etmez.
 

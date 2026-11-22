@@ -73,8 +73,8 @@ function safeNumber(value: bigint): number {
   return converted;
 }
 
-function costForEnergy(energyWh: number, priceMicroliraPerKWh: number): bigint {
-  return roundedDivide(BigInt(energyWh) * BigInt(priceMicroliraPerKWh), 1000n);
+function costForEnergy(energyWh: bigint, priceMicroliraPerKWh: number): bigint {
+  return roundedDivide(energyWh * BigInt(priceMicroliraPerKWh), 1000n);
 }
 
 export function calculateBill(inputValue: BillInput, tariffValue: TariffConfig): BillResult {
@@ -88,10 +88,13 @@ export function calculateBill(inputValue: BillInput, tariffValue: TariffConfig):
     throw new RangeError("Tariff is not valid for the billing period");
   }
 
-  const t1 = costForEnergy(input.t1Wh, tariff.pricesMicroliraPerKWh.t1);
-  const t2 = costForEnergy(input.t2Wh, tariff.pricesMicroliraPerKWh.t2);
-  const t3 = costForEnergy(input.t3Wh, tariff.pricesMicroliraPerKWh.t3);
-  const totalWh = input.t1Wh + input.t2Wh + input.t3Wh;
+  const t1Wh = BigInt(input.t1Wh);
+  const t2Wh = BigInt(input.t2Wh);
+  const t3Wh = BigInt(input.t3Wh);
+  const t1 = costForEnergy(t1Wh, tariff.pricesMicroliraPerKWh.t1);
+  const t2 = costForEnergy(t2Wh, tariff.pricesMicroliraPerKWh.t2);
+  const t3 = costForEnergy(t3Wh, tariff.pricesMicroliraPerKWh.t3);
+  const totalWh = t1Wh + t2Wh + t3Wh;
   const distribution = costForEnergy(totalWh, tariff.pricesMicroliraPerKWh.distribution);
   const subtotal = t1 + t2 + t3 + distribution;
   const taxes = tariff.taxes.map((tax) => ({

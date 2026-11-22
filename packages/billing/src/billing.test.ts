@@ -34,6 +34,23 @@ describe("billing", () => {
     expect(result.demonstration).toBe(true);
   });
 
+  it("sums safe energy registers exactly for distribution charges", () => {
+    const result = calculateBill(
+      {
+        t1Wh: Number.MAX_SAFE_INTEGER,
+        t2Wh: 2,
+        t3Wh: 0,
+        periodStartedAt: "2026-11-01T00:00:00.000Z",
+      },
+      {
+        ...demoTariff,
+        pricesMicroliraPerKWh: { t1: 0, t2: 0, t3: 0, distribution: 999 },
+        taxes: [],
+      },
+    );
+    expect(result.distributionMicrolira).toBe(8_998_192_055_486_252);
+  });
+
   it("rejects negative prices and invalid periods", () => {
     expect(() =>
       calculateBill(

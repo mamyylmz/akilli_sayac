@@ -26,14 +26,9 @@ tarafından yönetilmez.
 
 ## Kurulum ve doğrulama
 
-İlk yazılım temeli çevrimdışı bir WSL ortamında hazırlandı ve bu ortamda resmî pnpm ile
-`pnpm-lock.yaml` üretilemedi. İlk ağ erişimli doğrulamada bir kez `pnpm install` çalıştırın,
-oluşan lockfile'ı inceleyip commit edin. Bundan sonraki tüm kurulumlar ve CI frozen olmalıdır:
+Bağımlılıklar kilitlidir. Temiz kurulumlarda frozen lockfile kullanın:
 
 ```powershell
-pnpm install
-git add pnpm-lock.yaml
-# Lockfile commit edildikten sonraki temiz kurulumlarda:
 pnpm install --frozen-lockfile
 Copy-Item .env.example .env
 pnpm typecheck
@@ -69,8 +64,27 @@ pnpm --filter @akilli-sayac/web dev
 
 API başka bir interface'e bind olmaz. Gerçek röle işletilmez.
 
+## Simulink veri paketini içe aktarma
+
+Sözleşme 1.0'a ait ölçüm CSV, olay CSV ve meta JSON dosyasını `.env` içindeki
+`AKILLI_SAYAC_IMPORT_DIR` klasörüne birlikte kopyalayın. Meta dosyası tamamlanma işaretidir ve en
+son atomik olarak taşınmalıdır. Ardından operator veya admin token'ıyla yalnızca meta dosyasını
+bildirin:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri http://127.0.0.1:3000/api/v1/ami/import-file `
+  -Headers @{ Authorization = "Bearer <yerel-token>" } `
+  -ContentType "application/json" `
+  -Body '{"metadataFileName":"meta_2026-11-22.json"}'
+```
+
+API iki CSV adını metadata içinden alır; dosya yolu, boyut, SHA-256, şema, `run_id`, sayaç,
+satır sırası, olay ve enerji kontrolleri geçmeden SQLite'a kayıt yapmaz. Kısa fixture paketleri
+yalnızca metadata içinde `ornek` alanı bulunduğunda kabul edilir.
+
 ## MATLAB testi
 
 MATLAB R2026b, Simulink, Simscape ve Simscape Electrical mevcutsa `simulink/testler` içinden
-`test_dogrulama` çalıştırılabilir. MATLAB yoksa kayıtlı 92 testin yeniden çalıştırıldığı iddia
-edilmemelidir; yalnızca repository'deki `simulink/testler/test_sonuclari.md` kaynak gösterilir.
+`test_dogrulama` çalıştırılabilir. MATLAB yoksa kayıtlı Simulink testlerinin yeniden çalıştırıldığı
+iddia edilmemelidir; yalnızca repository'deki test sonuç dosyaları kaynak gösterilir.

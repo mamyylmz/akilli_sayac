@@ -8,21 +8,20 @@ dosyaları yazılım tarafından değiştirilmez. Simulink geliştiricisi export
 
 ## Sinyal eşlemesi
 
-| Simulink etiketi | JSON alanı                | Birim / not                       |
-| ---------------- | ------------------------- | --------------------------------- |
-| `V_anlik`        | `voltageInstantV`         | V, isteğe bağlı anlık örnek       |
-| `I_anlik`        | `currentInstantA`         | A, isteğe bağlı anlık örnek       |
-| `V_rms`          | `voltageRmsV`             | V rms                             |
-| `I_rms`          | `currentRmsA`             | A rms                             |
-| `P_aktif`        | `activePowerW`            | W; yön nedeniyle negatif olabilir |
-| `Q_reaktif`      | `reactivePowerVar`        | var; endüktif +, kapasitif −      |
-| `S_gorunur`      | `apparentPowerVa`         | VA = Vrms × Irms                  |
-| `cos_phi`        | `displacementPowerFactor` | P / sqrt(P² + Q²), işaretsiz      |
-| hesaplanan       | `truePowerFactor`         | P / (Vrms × Irms), yönlü          |
-| `E_KWh`          | `totalActiveEnergyKWh`    | kWh, büyük K etiketi korunur      |
-| `E_T1/T2/T3`     | `t1KWh/t2KWh/t3KWh`       | kWh                               |
-| `E_Rend/E_Rkap`  | reaktif enerji alanları   | kVArh                             |
-| `Role_Komut`     | `requestedRelayState`     | 1=`energized`, 0=`deenergized`    |
+| Simulink etiketi | JSON alanı              | Birim / not                       |
+| ---------------- | ----------------------- | --------------------------------- |
+| `V_anlik`        | `voltageInstantV`       | V, isteğe bağlı anlık örnek       |
+| `I_anlik`        | `currentInstantA`       | A, isteğe bağlı anlık örnek       |
+| `V_rms`          | `voltageRmsV`           | V rms                             |
+| `I_rms`          | `currentRmsA`           | A rms                             |
+| `P_aktif`        | `activePowerW`          | W; yön nedeniyle negatif olabilir |
+| `Q_reaktif`      | `reactivePowerVar`      | var; endüktif +, kapasitif −      |
+| `S_gorunur`      | `apparentPowerVa`       | VA = Vrms × Irms                  |
+| `cos_phi`        | `cos_phi`               | P / sqrt(P² + Q²), P yönünü izler |
+| `E_KWh`          | `totalActiveEnergyKWh`  | kWh, büyük K etiketi korunur      |
+| `E_T1/T2/T3`     | `t1KWh/t2KWh/t3KWh`     | kWh                               |
+| `E_Rend/E_Rkap`  | reaktif enerji alanları | kVArh                             |
+| `Role_Komut`     | `requestedRelayState`   | 1=`energized`, 0=`deenergized`    |
 
 ## Zaman alanları
 
@@ -44,24 +43,30 @@ tarafından güvenilir paket olarak kabul edilmez. Güvenilir yerel prototip iç
 4. `{ envelope, algorithm: "HMAC-SHA256", signatureBase64 }` biçimi `.json` olarak atomik taşınır.
 5. Önce geçici dosyaya yazılıp aynı dosya sisteminde rename edilmelidir; kısmi dosya okunmamalıdır.
 
-## CSV aktarımı
+## Sözleşme 1.0 CSV/JSON aktarımı
 
-CSV UTF-8, başlıklı ve invariant `.` ondalık ayracıyla aşağıdaki minimum sütunları içermelidir:
+Normatif tanım `simulink-veri-aktarimi` dalındaki `simulink/veri_sozlesmesi.md` dosyasıdır.
+Üretici `simulink/veri_aktar.m`, aynı `run_id` değerini taşıyan üç dosya oluşturur:
 
-```text
-schemaVersion,meterId,sequence,simulationTimeHours,exportedAt,V_rms,I_rms,P_aktif,Q_reaktif,S_gorunur,cos_phi,truePF,E_KWh,E_T1,E_T2,E_T3,E_Rend,E_Rkap,relayState,gridState,overloadActive
-```
+- `olcum_1dk_<gün>.csv`: 27 sütun ve normal pakette 1440 dakika;
+- `olaylar_<gün>.csv`: sözleşmedeki olay kodları ve durumlar;
+- `meta_<gün>.json`: sürüm, sayaç, dosya adları, SHA-256 özetleri ve Simulink kontrolleri.
 
-CSV, kaynak doğrulaması değildir. En fazla 1000 kayıt/256 KiB kabul edilir; önce şemalı AMI
-envelope'a dönüştürülüp imzalanmalıdır. API bilinmeyen bir CSV eşlemesini sessizce içe aktarmaz.
+Zaman aralık başlangıcıdır ve `+03:00` taşır. İlk iki tam gün satırındaki `gecerli=0`, şebeke
+kesintisi sayılmaz; bu satırların enerji sayaçları saklanır. `p_W` ve `e_aralik_kWh` negatif
+olabilir ve sıfıra kırpılmaz. Görsel güç analizi geçersiz satırları dışarıda bırakırken enerji
+alanları korunur.
+
+SHA-256, CSV baytlarının metadata ile tutarlı olduğunu gösterir; üreticinin kimliğini kanıtlamaz.
+İçe aktarılan paket `trusted_source=0` olarak saklanır. HMAC doğrulamalı AMI JSON yolu ayrı güven
+sınırı olarak çalışmaya devam eder.
 
 ## Simulink geliştiricisinden beklenenler
 
 - Export örnekleme noktası ve sıralama politikasını belirlemek.
 - Tüm alanlar için sinyal etiketi, birim ve işaret konvansiyonunu korumak.
-- Sayaç/packet UUID ve monoton sıra numarası üretmek.
-- Hangi katmanın HMAC anahtarına erişeceğini ve anahtar rotasyonunu kararlaştırmak.
+- Sözleşme 1.0 dosya adlarını, `run_id` değerini ve SHA-256 özetlerini korumak.
 - Dosyayı atomik yazmak, kısmi/yeniden adlandırılmış dosya davranışını test etmek.
-- `Role_Komut` için gerçek adapter tasarlanmadan önce D aşaması röle semantiğini ve fail-safe
-  kararlarını yazılı olarak onaylamak.
-- Yeni export testlerini mevcut 92 A–C test dosyasını değiştirmeden ayrı test olarak eklemek.
+- `Role_Komut` için [Simulink röle protokolündeki](./SIMULINK_RELAY_PROTOCOL.md) komut tüketimi,
+  onay ve sonuç çıkışını uygulamak.
+- Yeni export testlerini mevcut fiziksel model testlerini değiştirmeden ayrı test olarak eklemek.

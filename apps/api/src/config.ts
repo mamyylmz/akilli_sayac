@@ -6,7 +6,8 @@ const environmentSchema = z.object({
   AKILLI_SAYAC_PORT: z.coerce.number().int().min(1024).max(65_535).default(3000),
   AKILLI_SAYAC_WEB_ORIGINS: z.string().default("http://127.0.0.1:5173"),
   AKILLI_SAYAC_DB_PATH: z.string().default("./data/akilli-sayac.sqlite"),
-  AKILLI_SAYAC_METER_ID: z.string().default("meter-demo-001"),
+  AKILLI_SAYAC_IMPORT_DIR: z.string().default("./imports"),
+  AKILLI_SAYAC_METER_ID: z.string().default("SIM-0001"),
   AKILLI_SAYAC_AMI_HMAC_KEY_HEX: z.string().optional(),
   AKILLI_SAYAC_LOCAL_TOKENS_JSON: z.string().optional(),
 });
@@ -16,6 +17,7 @@ export interface AppConfig {
   port: number;
   allowedOrigins: string[];
   databasePath: string;
+  importDirectory: string;
   meterId: string;
   hmacKeyHex: string | undefined;
   localTokensJson: string | undefined;
@@ -30,6 +32,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
       .map((origin) => origin.trim())
       .filter(Boolean),
     databasePath: resolve(value.AKILLI_SAYAC_DB_PATH),
+    importDirectory: resolve(value.AKILLI_SAYAC_IMPORT_DIR),
     meterId: value.AKILLI_SAYAC_METER_ID,
     hmacKeyHex: value.AKILLI_SAYAC_AMI_HMAC_KEY_HEX,
     localTokensJson: value.AKILLI_SAYAC_LOCAL_TOKENS_JSON,

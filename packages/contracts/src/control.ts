@@ -32,9 +32,10 @@ export const commandResultSchema = packetMetadataSchema
   .extend({
     commandId: z.string().uuid(),
     completedAt: timestampSchema,
-    outcome: z.enum(["accepted", "rejected", "duplicate"]),
+    outcome: z.enum(["accepted", "pending", "applied", "rejected", "duplicate"]),
     code: z.enum([
       "APPLIED",
+      "QUEUED_FOR_SIMULINK",
       "DUPLICATE_COMMAND",
       "EXPIRED_COMMAND",
       "GRID_UNAVAILABLE",

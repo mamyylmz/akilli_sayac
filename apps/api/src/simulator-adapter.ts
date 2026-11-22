@@ -1,7 +1,9 @@
 import type { ControlCommand } from "@akilli-sayac/contracts";
 
 export interface SimulatorAdapterResult {
-  relayState: "energized" | "deenergized";
+  status: "pending" | "applied" | "rejected";
+  code: "QUEUED_FOR_SIMULINK" | "APPLIED";
+  relayState: "energized" | "deenergized" | "unknown";
   message: string;
 }
 
@@ -16,8 +18,10 @@ export interface SimulatorAdapter {
 export class LocalSimulatorAdapter implements SimulatorAdapter {
   async applyRelayCommand(command: ControlCommand): Promise<SimulatorAdapterResult> {
     return Promise.resolve({
-      relayState: command.requestedRelayState,
-      message: "Accepted by the local simulator adapter; no physical relay was operated",
+      status: "pending",
+      code: "QUEUED_FOR_SIMULINK",
+      relayState: "unknown",
+      message: `Command ${command.commandId} is pending Simulink acknowledgement; no relay was operated`,
     });
   }
 }

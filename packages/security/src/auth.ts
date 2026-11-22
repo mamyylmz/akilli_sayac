@@ -2,7 +2,8 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 export const roles = ["viewer", "operator", "admin"] as const;
 export type Role = (typeof roles)[number];
-export type Permission = "meter:read" | "ami:import" | "relay:control" | "audit:read";
+export type Permission =
+  "meter:read" | "ami:import" | "relay:control" | "audit:read" | "tariff:manage";
 
 export interface Actor {
   actorId: string;
@@ -16,7 +17,7 @@ export interface TokenRecord extends Actor {
 const rolePermissions: Record<Role, ReadonlySet<Permission>> = {
   viewer: new Set(["meter:read"]),
   operator: new Set(["meter:read", "ami:import", "relay:control", "audit:read"]),
-  admin: new Set(["meter:read", "ami:import", "relay:control", "audit:read"]),
+  admin: new Set(["meter:read", "ami:import", "relay:control", "audit:read", "tariff:manage"]),
 };
 
 export function hasPermission(actor: Actor, permission: Permission): boolean {

@@ -14,6 +14,7 @@
     "@akilli-sayac/billing": "workspace:*",
     "@akilli-sayac/contracts": "workspace:*",
     "@akilli-sayac/security": "workspace:*",
+    "csv-parse": "7.0.3",
     "fastify": "5.12.8",
     "zod": "4.6.7"
   }

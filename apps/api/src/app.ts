@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError, z } from "zod";
+import { tariffConfigSchema } from "@akilli-sayac/billing";
 import {
   amiEnvelopeSchema,
   commandResultSchema,
@@ -17,8 +18,8 @@ import {
   verifyAmiEnvelope,
 } from "@akilli-sayac/security";
 import type { MeterDatabase } from "./database.js";
-import { readLimitedImportFile } from "./file-import.js";
 import { installHttpSecurity, requirePermission } from "./http-security.js";
+import { loadSimulinkImportPackage, SimulinkImportError } from "./simulink-import.js";
 import { LocalSimulatorAdapter, type SimulatorAdapter } from "./simulator-adapter.js";
 
 export interface BuildAppOptions {
@@ -103,11 +104,71 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
   app.get("/health", () => ({ status: "ok", service: "Akıllı Sayaç API" }));
 
-  app.get("/api/v1/dashboard", { preHandler: requirePermission("meter:read") }, () => ({
-    dataStatus: "Simulated / Synthetic",
-    trustedPhysicalMeterData: false,
-    ...options.database.dashboard(options.expectedMeterId),
+  app.get("/api/v1/dashboard", { preHandler: requirePermission("meter:read") }, (request) => {
+    const query = z
+      .object({
+        runId: z
+          .string()
+          .regex(/^SIM-[0-9]{4}-[0-9]{8}T[0-9]{6}-[0-9A-F]{8}$/)
+          .optional(),
+      })
+      .parse(request.query);
+    return {
+      dataStatus: "Simulated",
+      trustedPhysicalMeterData: false,
+      ...options.database.dashboard(options.expectedMeterId, query.runId),
+    };
+  });
+
+  app.get("/api/v1/simulation-runs", { preHandler: requirePermission("meter:read") }, () => ({
+    runs: options.database.listSimulationRuns(options.expectedMeterId),
   }));
+
+  app.post(
+    "/api/v1/simulation-runs/:runId/select",
+    { preHandler: requirePermission("meter:read") },
+    (request, reply) => {
+      const params = z.object({ runId: z.string().min(1).max(96) }).parse(request.params);
+      if (!request.actor) return reply.code(401).send({ error: "UNAUTHENTICATED" });
+      if (
+        !options.database.selectSimulationRun(
+          options.expectedMeterId,
+          params.runId,
+          request.actor.actorId,
+        )
+      ) {
+        return reply
+          .code(404)
+          .send({ error: "RUN_NOT_FOUND", message: "Simulation run was not found" });
+      }
+      return reply.code(200).send({ selected: true, runId: params.runId });
+    },
+  );
+
+  app.get(
+    "/api/v1/simulation-runs/:runId/measurements",
+    { preHandler: requirePermission("meter:read") },
+    (request) => {
+      const params = z.object({ runId: z.string().min(1).max(96) }).parse(request.params);
+      const query = z
+        .object({
+          bucketMinutes: z.coerce
+            .number()
+            .int()
+            .refine((value) => [1, 15, 60].includes(value))
+            .default(15),
+        })
+        .parse(request.query);
+      return {
+        runId: params.runId,
+        bucketMinutes: query.bucketMinutes,
+        measurements: options.database.simulationSeries(
+          params.runId,
+          query.bucketMinutes as 1 | 15 | 60,
+        ),
+      };
+    },
+  );
 
   function importPacket(packetValue: unknown): { statusCode: number; body: unknown } {
     const packet = signedAmiPacketSchema.parse(packetValue);
@@ -153,22 +214,76 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
     { preHandler: requirePermission("ami:import") },
     (request, reply) => {
       const body = z
-        .object({ fileName: z.string().min(1).max(128) })
+        .object({ metadataFileName: z.string().min(1).max(128) })
         .strict()
         .parse(request.body);
-      const imported = readLimitedImportFile(importDirectory, body.fileName, {
-        maxBytes: 256 * 1024,
-        maxRecords: 1000,
-      });
-      if (imported.extension !== ".json") {
-        return reply.code(422).send({
-          error: "CSV_REQUIRES_MAPPING",
-          message: "CSV must be converted using the documented Simulink column mapping",
+      if (!request.actor) return reply.code(401).send({ error: "UNAUTHENTICATED" });
+      try {
+        const imported = loadSimulinkImportPackage(
+          importDirectory,
+          body.metadataFileName,
+          options.expectedMeterId,
+        );
+        const result = options.database.ingestSimulinkPackage(imported, request.actor.actorId);
+        if (!result.inserted) {
+          return reply.code(409).send({
+            error: "RUN_ALREADY_IMPORTED",
+            message: "This Simulink run was already imported",
+            runId: result.runId,
+          });
+        }
+        return reply.code(201).send({
+          imported: true,
+          runId: result.runId,
+          measurementCount: result.measurements,
+          eventCount: result.events,
+          dataSource: "Simulink simulation",
+          trustedPhysicalMeterData: false,
         });
+      } catch (error) {
+        if (!(error instanceof SimulinkImportError)) throw error;
+        options.database.recordImportFailure(
+          options.expectedMeterId,
+          request.actor.actorId,
+          body.metadataFileName,
+          error.code,
+        );
+        return reply.code(422).send({ error: error.code, message: error.message });
       }
-      const parsed: unknown = JSON.parse(imported.contents);
-      const result = importPacket(parsed);
-      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
+  app.get("/api/v1/tariffs", { preHandler: requirePermission("meter:read") }, () => ({
+    tariffs: options.database.listTariffs(),
+  }));
+
+  app.post(
+    "/api/v1/tariffs",
+    { preHandler: requirePermission("tariff:manage") },
+    (request, reply) => {
+      const tariff = tariffConfigSchema.parse(request.body);
+      if (!options.database.saveTariff(tariff)) {
+        return reply
+          .code(409)
+          .send({ error: "TARIFF_EXISTS", message: "Tariff ID already exists" });
+      }
+      return reply.code(201).send({ created: true, tariff });
+    },
+  );
+
+  app.post(
+    "/api/v1/simulation-runs/:runId/bills",
+    { preHandler: requirePermission("meter:read") },
+    (request, reply) => {
+      const params = z.object({ runId: z.string().min(1).max(96) }).parse(request.params);
+      const body = z.object({ tariffId: z.string().uuid() }).strict().parse(request.body);
+      try {
+        return reply.code(200).send(options.database.calculateRunBill(params.runId, body.tariffId));
+      } catch {
+        return reply
+          .code(404)
+          .send({ error: "RUN_OR_TARIFF_NOT_FOUND", message: "Run or tariff was not found" });
+      }
     },
   );
 
@@ -220,13 +335,25 @@ export function buildApp(options: BuildAppOptions): FastifyInstance {
 
       const adapterResult = await adapter.applyRelayCommand(command);
       const accepted = resultFor(command, {
-        outcome: "accepted",
-        code: "APPLIED",
+        outcome: adapterResult.status,
+        code: adapterResult.code,
         relayState: adapterResult.relayState,
         message: adapterResult.message,
       });
       options.database.completeCommand(command, accepted);
       return reply.code(202).send(accepted);
+    },
+  );
+
+  app.get(
+    "/api/v1/control-commands/:commandId",
+    { preHandler: requirePermission("meter:read") },
+    (request, reply) => {
+      const params = z.object({ commandId: z.string().uuid() }).parse(request.params);
+      const status = options.database.commandStatus(params.commandId);
+      return status
+        ? reply.code(200).send(status)
+        : reply.code(404).send({ error: "COMMAND_NOT_FOUND", message: "Command was not found" });
     },
   );
 

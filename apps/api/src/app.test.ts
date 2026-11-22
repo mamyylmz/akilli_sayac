@@ -309,7 +309,7 @@ describe("AMI security and SQLite idempotency", () => {
 });
 
 describe("relay control safety", () => {
-  it("applies a command once and returns an idempotent duplicate result", async () => {
+  it("queues a placeholder command once without claiming relay application", async () => {
     const { app } = createTestApp();
     await importStatus(app, createEnvelope());
     const payload = command();
@@ -326,6 +326,11 @@ describe("relay control safety", () => {
       payload,
     });
     expect(first.statusCode).toBe(202);
+    expect(first.json()).toMatchObject({
+      outcome: "pending",
+      code: "QUEUED_FOR_SIMULINK",
+      relayState: "unknown",
+    });
     expect(duplicate.statusCode).toBe(200);
     expect(duplicate.json()).toMatchObject({ outcome: "duplicate", code: "DUPLICATE_COMMAND" });
   });
@@ -383,7 +388,12 @@ describe("relay control safety", () => {
         await new Promise<void>((resolve) => {
           release = resolve;
         });
-        return { relayState: request.requestedRelayState, message: "test adapter" };
+        return {
+          status: "applied",
+          code: "APPLIED",
+          relayState: request.requestedRelayState,
+          message: "test adapter",
+        };
       },
     };
     const { app } = createTestApp({ adapter });

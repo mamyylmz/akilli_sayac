@@ -1,6 +1,6 @@
 # Akıllı Sayaç Projesi – Simulink Modeli (v2, ev tipi)
 
-**Durum tarihi:** 19.11.2026  **Hazırlayan:** Poyraz Ege Taş (şebeke ve devre tasarımı)
+**Durum tarihi:** 20.11.2026  **Hazırlayan:** Poyraz Ege Taş (şebeke ve devre tasarımı)
 
 ## 1. Klasördeki dosyalar
 
@@ -8,8 +8,16 @@
 |---|---|
 | `Akilli_Sayac.slx` | **Ana model** — tek çalışma dosyası (bunu açın) |
 | `yedekler/` | Tarihli yedekler `Akilli_Sayac_YYYY_AA_GG[_SSDD].slx` (değiştirmeyin) |
-| `akilli_sayac_param.m` | Tüm parametreler. Model her çalıştırmada bunu otomatik çalıştırır (InitFcn) |
-| `testler/test_dogrulama.m` | Otomatik doğrulama betiği (A–C aşamaları). Modeli kaydetmeden iki kez çalıştırır (normal gün + test senaryosu), sonuçları teorik değerlerle karşılaştırır |
+| `akilli_sayac_param.m` | Tüm parametreler, zaman ölçekleri ve test modları. Model her çalıştırmada bunu otomatik çalıştırır (InitFcn) |
+| `koruma_mantigi.m` | D aşaması: aşırı güç koruması, yeniden bağlantı koşulları, durum ve olay kodları (`Koruma_Mantigi` bloğu çağırır) |
+| `batarya_mantigi.m` | Ev tipi batarya: şarj/deşarj kararı ve doluluk (SOC) hesabı (`Batarya_Mantigi` bloğu çağırır) |
+| `testler/test_dogrulama.m` | A–C aşamaları doğrulaması, `measurement_test` modunda (koruma ve batarya kapalı) |
+| `testler/test_D_koruma.m` | D aşaması: 6 koruma senaryosu (normal, kısa aşım, kalıcı aşım, güvenli bağlantı, red, gerilim arızasında red) + olay kaydı |
+| `testler/test_B_batarya.m` | Batarya: bataryalı gün, ada çalışma önleme, ölçüm testi modunda kapalı olma |
+| `testler/test_E_guc_kalitesi.m` | E aşaması: kesinti, gerilim çökmesi ve yükselmesi; olay başlangıcı, süresi, ölçülen değerler, sistem tepkisi |
+| `testler/test_F_talep.m` | F aşaması: çamaşır makinesini gece tarifesine kaydırma (enerji korunur, T2 → T3) |
+| `testler/test_G_kesinti_batarya.m` | G: kesinti + batarya regresyon testi (sıfır geçişi kilitlenmesi düzeltmesinin kontrolü) |
+| `testler/tum_testler.m` | Bütün testleri sırayla çalıştırıp genel özet verir |
 | `testler/test_sonuclari.md` / `.xlsx` | Betiğin ürettiği sonuçlar: her ölçüm ayrı satırda, sayısal sütunlar (beklenen / gerçekleşen / fark / hata / sonuç) |
 | `testler/teorik_hesaplar.md` | Beklenen değerlerin hesabı (zaman dilimi bazında P, Q, S, kWh, kVARh; kapasitif test yükü; röle testi) |
 | `testler/C_asamasi_dogrulama.xlsx` | Formüllü doğrulama çalışma kitabı (C aşaması, 18.11.2026 çalıştırması): cihaz hesapları, dilim bazında enerji, tarife dağılımı |
@@ -23,7 +31,7 @@
 2. `Akilli_Sayac.slx` modelini açın ve **Run**'a basın (5–10 sn sürer).
 3. Sonuçlar: **Scope1** (I_rms, P, Q, V_rms), **Enerji_Scope**, **GucFaktoru_Scope**, Display blokları ve **HAN – Ev İçi Müşteri Ekranı** (Dashboard).
 4. Sunum için: SIMULATION › Run (▼) › Simulation Pacing › hız 1 → bir gün 24 saniyede, HAN ekranı canlı izlenir.
-5. **Testler:** Modeli kaydedin (Ctrl+S). Current Folder'da `testler` klasörüne girip komut penceresine `test_dogrulama` yazın (~30 s). Betik bitince ana klasöre döner.
+5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~7 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
 
 Gereken araç kutuları: Simulink, Simscape, Simscape Electrical.
 Model daha yeni bir MATLAB sürümünde kaydedildi. Daha eski sürümde açılmazsa haber verin, eski sürüme dışa aktarılabilir.
@@ -119,17 +127,51 @@ T1–T11 ilk olarak Scope ve Display değerleriyle elle doğrulandı. T4 ve T6�
 - Reaktif enerji değerleri (E_Rend, E_Rkap) yalnızca bu tek fazlı, sinüzoidal model varsayımları kapsamında geçerlidir.
 - **Test senaryosu:** Parametre dosyasının sonundaki bölüm, çalışma alanında `test_senaryo` adlı bir struct varsa onun alanlarını kullanır (ör. `test_senaryo.t_kesme = 23`). Test betiği bunu kendisi açar ve kapatır. Elle denediyseniz iş bitince `clear test_senaryo` yazın.
 - **cos φ işaretsizdir.** Kapasitif yükte de pozitif görünür; yükün endüktif mi kapasitif mi olduğunu Q'nun işareti gösterir.
+- **Sıfır geçişi (22.11.2026):** `Sadece_Enduktif` ve `Sadece_Kapasitif` (Q'yu sıfırda kesen Saturation blokları) sıfır geçişi algılaması **kapalıdır**. Bataryalı günde kesinti sırasında Q sıfır etrafında sayısal gürültüyle salınınca açık olan algılama 1000 ardışık sıfır geçişiyle simülasyonu durduruyordu. kVARh sayacına etkisi en fazla bir çözücü adımıdır. Regresyon testi: `test_G_kesinti_batarya`.
 - Test betiği çalışmadan önce modelin kaydedilmiş olmasını ister (kaydedilmemiş değişiklik test sonucunu belirsiz yapar).
 - Modeli kaydederken **Save As kullanmayın** (sizi yeni dosyaya geçirir). Yedekler `yedekler/` klasörüne tarihli adla kopyalanır. Dosya adlarında **nokta ve boşluk kullanmayın**; Simulink model adı olarak kabul etmez.
 
+## 8b. D aşaması ve batarya (19.11.2026)
+
+**Zaman ölçekleri:** Profil ölçeği 1 s = 1 saat (cihaz programları, tarife, enerji, koruma zamanlayıcıları); fiziksel ölçek 50 Hz, 1 periyot = 20 ms = 1,2 profil dakikası (ölçüm penceresi, geçiciler, gerilim kararlılık penceresi). Profil ölçeğinde ~1,2 dakikadan kısa süreler ölçülemez.
+
+**Şebeke:** Kontrollü gerilim kaynağı (`Sebeke`): v(t) = sebeke_V(t)·√2·sin(ωt). Normal günde 230 V; gerilim olayı senaryoları `sebeke_t / sebeke_V` ile kurulur. Hesaplanan gerilim `V_ref` etiketiyle batarya akımında kullanılır (ölçüm yerine; cebirsel döngü oluşmaz).
+
+**Çalışma modları (`test_modu`):** `normal` = koruma ve batarya AKTİF (varsayılan). `measurement_test` = koruma ve batarya kapalı; yalnızca C aşaması referans ölçüm testleri (14,56 kWh referansı korunur).
+
+**Koruma (D):** P_sinir 4000 W, P_geri 3800 W (histerezis). Aşım 1 dk sürerse uyarı, 3 dk sürerse röle açılır ve kilitlenir. Yeniden bağlantı yalnızca yetkili istekle (`baglan_t/u`) ve şu koşullarla: kesmeden ≥ 5 dk geçmiş, tahmini yük ≤ 3800 W (cihaz programlarından; röle açıkken ölçülen P = 0 kullanılmaz), gerilim 207–253 V aralığında ve 3 periyot (60 ms ≈ 3,6 profil dk) kararlı, şebeke var.
+
+| Durum kodu | Anlamı |
+|---|---|
+| 0 | Normal |
+| 1 | Aşırı güç uyarısı |
+| 2 | Aşırı güç kesmesi – kilitli, yetkili onay bekliyor |
+| 3 | Kullanıcı/uzaktan komutla açık |
+| 4 | Şebeke yok (V < 23 V) |
+| 5 | Gerilim 207–253 V dışında |
+
+Olay kodları: 10/11 uyarı başladı/bitti, 20 kesme, 30/31 bağlantı kabul/red, 40/41 şebeke kesildi/geldi, 42/43 gerilim aralık dışı/döndü, 50/51 kullanıcı kesti/açtı. Red maskesi: 1 bekleme, 2 yük, 4 gerilim, 8 şebeke yok (toplanır).
+
+**Batarya:** 5 kWh, SOC 0,10–0,95; gece (T3) 1500 W şarj (P_geri − tahmini yükü aşmayacak şekilde kısılır), puantta (T2) en fazla 2500 W deşarj (tahmini yükü aşmaz → şebekeye enerji verilmez); röle açıkken durur. Bataryalı günde 18:00 tepesi 4544 W → ≈ 2044 W'a iner, koruma kesmez. Kontrollü akım kaynağının (`Batarya`) **+ ucu nötrde** olduğu için akım kazancı **+1/Vrms²**'dir: i(t) = P_bat·v_ref(t)/230².
+
+| Sinyal (Goto) | Anlamı |
+|---|---|
+| `Role_Komut` | Kullanıcı/uzaktan komut (1 = enerji ver) |
+| `Role_Cikis` | Koruma mantığının röle çıkışı (rölenin asıl komutu) |
+| `Durum_Kodu`, `Olay_Kodu`, `Red_Maske`, `Asiri_Guc_Uyari` | Koruma çıkışları |
+| `P_tahmin` | Cihaz programlarından tahmini yük (W) |
+| `Tarife_T2`, `Tarife_T3` | Tarife dilim maskeleri |
+| `V_ref` | Şebekenin hesaplanan anlık gerilimi (V) |
+| `P_batarya`, `SOC`, `Batarya_Mod` | Batarya gücü (W; + deşarj, − şarj), doluluk, mod (0 bekleme, 1 şarj, 2 deşarj) |
+
+**Test sonuçları (19.11.2026):** C 93/93 (measurement_test), D 39/39, batarya testi: `test_B_batarya` (20.11.2026).
+
 ## 9. Sıradaki adımlar (Simulink tarafı)
 
-Tamamlandı: enerji sayacı, üç zamanlı sayaç, reaktif enerji ve cos φ, HAN ekranı, görünür güç S, kapasitif işaret testi (T12), otomatik röle testi (T4). **Aşama 0 (A–C doğrulaması) kabule hazır.**
+Tamamlandı: A–C (93 test), D aşaması koruma ve röle mantığı (39 test), ev tipi batarya.
 
-1. D aşaması: bağlantı gücü aşımı (uyarı / kesme, gecikmeli), uzaktan kesme-açma durum mantığı, kesinti bildirimi
-2. Ev tipi batarya (ekipte kararlaştırıldı): gece (T3) şebekeden şarj, puantta (T2) evi besleme; tepe gücü düşürme
-3. Güç kalitesi: gerilim çökmesi, yükselmesi, kesinti
-4. Talep yönetimi: ertelenebilir yük (çamaşır makinesini gece tarifesine kaydırma)
-5. Yazılıma veri aktarımı (CSV/JSON), veri sözleşmesi kesinleşince
+1. E (güç kalitesi) ve F (talep yönetimi) test betikleri hazır: `test_E_guc_kalitesi`, `test_F_talep`
+2. Yazılıma veri aktarımı (CSV/JSON), veri sözleşmesi kesinleşince
+3. İsteğe bağlı (P2): THD/harmonik, aşırı gerilimde röle açma (ekip kararı gerekir)
 
 TL cinsinden fatura: yazılım katmanı (T1/T2/T3 sayaç değerlerini kullanır).

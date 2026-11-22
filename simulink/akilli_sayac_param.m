@@ -9,6 +9,9 @@
 %   18.11.2026 - Poyraz: ev yük profili (7 cihaz) parametreleri eklendi
 %   18.11.2026 - Poyraz: enerji sayacı (k_kWh) ve üç zamanlı tarife maskeleri eklendi
 %   19.11.2026 - Poyraz: görünür güç S, kapasitif test yükü (T12), test senaryosu bölümü
+%   19.11.2026 - Poyraz: şebeke kontrollü gerilim kaynağı ile modellendi (gerilim profili)
+%   19.11.2026 - Poyraz: D aşaması koruma parametreleri, zaman ölçekleri, test modları (Muhammed onayı)
+%   19.11.2026 - Poyraz: ev tipi batarya (gece şarj, puantta deşarj; ekip kararı)
 
 %% Zaman ölçeği
 % 1 s simülasyon = 1 saat gerçek zaman  ->  24 s simülasyon = 1 gün.
@@ -21,6 +24,13 @@ f      = 50;              % Hz, şebeke frekansı
 w      = 2*pi*f;          % rad/s, açısal frekans
 Vrms   = 230;             % V, faz-nötr etkin değer
 Vpk    = Vrms*sqrt(2);    % V, tepe değer (Simscape AC kaynağı TEPE değer ister) = 325.27 V
+
+% Şebeke gerilim profili (D ve E aşamaları: kesinti, çökme, yükselme senaryoları)
+% Şebeke, kontrollü gerilim kaynağıyla modellenir:  v(t) = sebeke_V(t) * sqrt(2) * sin(w*t)
+% sebeke_V: o saatten itibaren şebekenin etkin (rms) gerilimi [V]  (Lookup "Flat": basamaklı)
+% Normal gün: sabit 230 V. Kesinti için 0, gerilim çökmesi için ör. 190 V yazılır.
+sebeke_t = [0     25  ];
+sebeke_V = [Vrms  Vrms];
 
 %% ESKİ TEST YÜKÜ (T1-T4 doğrulama testleri) - Adım 5b-4'te baz yük ile değiştirilecek
 % P = 1840 W, Q = 1380 VAR, I = 10 A, cos(phi) = 0.80
@@ -98,6 +108,67 @@ kap_u = [0 0];
 %% Ana röle (uzaktan kesme-açma) - test
 t_kesme = 25;     % saat; 24'ten büyük = gün içinde kesme yok (test şimdilik kapalı)
 
+%% ===================== D AŞAMASI: KORUMA VE RÖLE MANTIĞI =====================
+% ZAMAN ÖLÇEKLERİ – modelde iki ayrı ölçek vardır:
+%   Profil ölçeği  : 1 s simülasyon = 1 saat. Cihaz programları, tarife, enerji ve koruma
+%                    zamanlayıcıları (uyarı, kesme gecikmesi, bekleme) bu ölçektedir.
+%                    1 profil dakikası = dk = 1/60 s simülasyon.
+%   Fiziksel ölçek : 50 Hz şebeke dalgası. 1 periyot = 1/f = 20 ms simülasyon. RMS ve güç
+%                    ölçüm penceresi (1 periyot), anahtarlama geçicileri ve gerilim
+%                    kararlılık penceresi bu ölçektedir.
+%   Dönüşüm        : 1 periyot = 20 ms = 72 profil saniyesi = 1,2 profil dakikası.
+%                    Profil ölçeğinde ~1,2 dakikadan kısa süreler ölçülemez.
+% Bu eşikler simülasyon parametreleridir; gerçek tesisat koruma ayarı olarak kullanılmaz.
+
+% Çalışma modu
+%   'normal'           : koruma AKTİF (varsayılan çalışma davranışı)
+%   'measurement_test' : koruma devre dışı – yalnızca C aşaması referans ölçüm testleri
+test_modu = 'normal';
+
+% Güç sınırları (Muhammed Yılmaz onayı, 19.11.2026)
+P_sinir = 4000;          % W, bağlantı gücü sınırı (ölçülen P bunu aşarsa "aşım")
+P_geri  = 3800;          % W, yeniden bağlanma eşiği (histerezis): tahmini yük bunu aşmamalı
+
+% Zamanlayıcılar (PROFİL ölçeği)
+t_uyari = 1*dk;          % aşım bu kadar sürerse uyarı       (1 profil dk = 16,7 ms sim)
+t_asim  = 3*dk;          % aşım bu kadar sürerse röle açılır (3 profil dk = 50 ms sim = 2,5 periyot)
+t_bekle = 5*dk;          % kesmeden sonra en az bekleme      (5 profil dk = 83 ms sim = 4,2 periyot)
+
+% Gerilim koşulları (FİZİKSEL ölçek)
+V_min     = 0.90*Vrms;   % V = 207 V
+V_max     = 1.10*Vrms;   % V = 253 V
+V_kesinti = 0.10*Vrms;   % V = 23 V; bunun altı "şebeke yok" (kesinti) [varsayım]
+t_kararli = 3/f;         % s = 60 ms = 3 periyot ≈ 3,6 profil dk. Gerilim bu pencere boyunca
+                         % V_min–V_max arasında kalmalı. Gerçek dünyadaki 3 s şartının birebir
+                         % karşılığı DEĞİLDİR; ölçüm penceresinin (1 periyot) 3 katı olarak
+                         % seçilmiş simülasyon kararlılık penceresidir.
+
+% Kontrol mantığının örnekleme süresi
+Ts_kontrol = 1e-3;       % s = 1 ms sim (= 3,6 profil saniyesi; periyodun 1/20'si)
+
+% Yetkili kullanıcının yeniden bağlanma isteği (1 = istek; yükselen kenar okunur)
+% Örnek: 18:15'te istek ->  baglan_t = [0 18.25 18.25+dk 25];  baglan_u = [0 1 0 0];
+baglan_t = [0 25];
+baglan_u = [0 0];
+
+%% ===================== BATARYA (ev tipi enerji depolama) =====================
+% Sayacın EV tarafında, ana röleden sonra bağlıdır (sayaç şebekeden çekilen NET gücü ölçer).
+% Strateji (ekip kararı): gece (T3) şebekeden şarj olur, puantta (T2) evi besler.
+%  - Şebekeye enerji VERMEZ: deşarj gücü ≤ evin tahmini yükü (tahmin_P).
+%  - Şarj, bağlantı gücünü aşmamak için kısılır: şarj ≤ P_geri − tahmini yük.
+%  - Ana röle açıkken batarya durur (ada çalışmayı önleme).
+% İşaret: P_bat > 0 deşarj (eve güç verir), P_bat < 0 şarj (şebekeden güç çeker).
+% Değerler varsayımdır (ev tipi batarya); simülasyon parametresidir.
+batarya_aktif = 1;        % 1 = açık, 0 = kapalı ('measurement_test' modunda otomatik kapalı)
+E_bat      = 5;           % kWh, kapasite
+SOC_min    = 0.10;        % kullanılabilir alt sınır
+SOC_max    = 0.95;        % üst sınır
+SOC_0      = 0.63;        % gece yarısındaki doluluk (önceki günden kalan; kararlı güne yakın değer)
+P_sarj     = 1500;        % W, en büyük şarj gücü (yalnızca T3)
+P_desarj   = 2500;        % W, en büyük deşarj gücü (yalnızca T2)
+eta_sarj   = 0.95;        % şarj verimi
+eta_desarj = 0.95;        % deşarj verimi
+
 %% Enerji sayacı (Adım 6)
 % kWh = integral(P dt) * (3600 s gerçek / 1 s simülasyon) / (3.6e6 J/kWh)
 k_kWh = 3600/3.6e6;   % = 1/1000
@@ -124,3 +195,29 @@ if exist('test_senaryo', 'var') && isstruct(test_senaryo)
     warning('TEST SENARYOSU AKTİF: %s', strjoin(ts_alanlar', ', '));
     clear ts_alanlar ts_i
 end
+
+%% Türetilen değerler (test senaryosundan SONRA hesaplanır; elle değiştirmeyin)
+% Koruma açık mı?  Yalnızca 'measurement_test' modunda kapalı.
+koruma_aktif = double(~strcmp(test_modu, 'measurement_test'));
+
+% Yeniden bağlanacak yüklerin tahmini aktif gücü – cihazların açık/kapalı programlarından.
+% Röle açıkken ölçülen P = 0 olduğu için bağlantı kararında ölçüm değil bu tahmin kullanılır.
+ts_ct = {kettle_t, firin_t, tv_t, bulasik_t, camasir_t, klima_t};
+ts_cu = {kettle_u, firin_u, tv_u, bulasik_u, camasir_u, klima_u};
+ts_cP = [P_kettle, P_firin, P_tv, P_bulasik, P_camasir, P_klima];
+tahmin_t = unique([ts_ct{:}]);
+tahmin_P = P_baz * ones(size(tahmin_t));
+for ts_i = 1:numel(ts_cP)
+    tahmin_P = tahmin_P + ts_cP(ts_i) * interp1(ts_ct{ts_i}, ts_cu{ts_i}, tahmin_t, 'previous');
+end
+clear ts_ct ts_cu ts_cP ts_i
+
+% Koruma mantığı parametre vektörü (MATLAB Function bloğuna tek girişle verilir)
+%          1       2      3       4      5       6         7     8     9          10
+kor_par = [P_sinir P_geri t_uyari t_asim t_bekle t_kararli V_min V_max V_kesinti koruma_aktif];
+
+% Batarya etkin mi?  'measurement_test' modunda (referans ölçüm testi) her zaman kapalı.
+batarya_etkin = double(batarya_aktif > 0.5 && ~strcmp(test_modu, 'measurement_test'));
+% Batarya mantığı parametre vektörü (MATLAB Function bloğuna tek girişle verilir)
+%          1             2     3       4       5     6      7        8        9          10
+bat_par = [batarya_etkin E_bat SOC_min SOC_max SOC_0 P_sarj P_desarj eta_sarj eta_desarj P_geri];

@@ -16,8 +16,13 @@ Son güncelleme: 23.11.2026
   uzlaştırılmadan yazılım PR'ına zorla alınmamalıdır.
 
 Simulink dalları rebase edilmedi, yeniden yazılmadı ve force push yapılmadı. Sözleşme, üretici ve
-fixture'lar remote Git nesnelerinden salt okunur incelendi. Yazılım değişiklikleri aynı Simulink
+fixture'lar önce remote Git nesnelerinden salt okunur incelendi. HAN ve veri aktarımı geçmişi,
+`integration/software-simulink-local` geçici yerel dalında `2ed0e59` normal merge commit'iyle
+birleştirildi; `.slx` üzerinde elle değişiklik yapılmadı. Yazılım PR dalı aynı Simulink
 değişikliklerini gelecekteki PR'da tekrar sunmamak için ayrı tutuldu.
+
+PR #2 ile veri aktarımı hattının `merge-tree` analizi `.slx`, README, test sonuç Markdown ve XLSX
+dosyalarında gerçek çatışmalar gösterdi. Bu çatışmalar model sahibinin kararı olmadan çözülmedi.
 
 ## 2. Tamamlanan geliştirmeler
 
@@ -201,3 +206,11 @@ Değişiklikler `feature/software-simulink-integration` dalında, `main` dışı
 `main`e doğrudan merge veya public GitHub push yapılmamıştır. PR, yazılım temelini yeniden getiren
 ayrı inceleme olarak açılmalı; hedef dal stratejisi Simulink dallarının uzlaştırılmasından sonra
 proje yöneticisi tarafından onaylanmalıdır.
+
+PR'a hazır ana commit'ler:
+
+- `7ef830d` — importer, SQLite, API, HAN, tarife/fatura ve röle protokolü;
+- `f96aa8a` — entegrasyon, kurulum, geliştirme durumu ve kabul handoff belgeleri.
+
+Geçici yerel entegrasyon commit'i `2ed0e59`, HAN ve veri aktarımı tarihçesinin yazılımla temiz
+birleştiğini doğrular; PR #2'nin ayrışan son model düzeltmesini içermez.

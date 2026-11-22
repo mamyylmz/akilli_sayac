@@ -6,6 +6,8 @@ function gosteri_gunu(islem)
 %   gosteri_gunu            % senaryoyu yükler; modelde Run'a basınca HAN ekranında canlı izlenir
 %   gosteri_gunu('veri')    % senaryoyla modeli çalıştırır: TEST verisi (ciktilar/test/), olay
 %                           % tablosu, kontroller ve grafik (raporlar/gosteri_gunu.png) üretir
+%   gosteri_gunu('ornek')   % 'veri' ile aynı + Git'e konacak küçük örnek dosyalar (ornek_veri/):
+%                           % 12:25-12:45 kesinti ve 17:55-18:30 aşırı güç kesitleri
 %   gosteri_gunu('kapat')   % senaryoyu kaldırır; model normal güne döner
 %
 % Senaryo (normal günden farkları):
@@ -22,6 +24,7 @@ function gosteri_gunu(islem)
 %   22:00        batarya gece şarjı (şarj, 3800 W'ı aşmamak için kısılır)
 %   23:30        kullanıcı uygulamadan sayacı kapatır            -> durum 3 (gri), olay 50
 % Bu bir TEST senaryosudur: veri ciktilar/test/ klasörüne, dosya adına _TEST eklenerek yazılır.
+% Tam günlük çıktılar Git'e gönderilmez (proje kararı); yalnızca ornek_veri/ altındaki kısa kesitler gönderilir.
 % Modelde ve parametre dosyasında hiçbir şey değişmez.
 
 if nargin < 1, islem = 'yukle'; end
@@ -55,7 +58,7 @@ switch lower(islem)
         evalin('base', 'clear test_senaryo');
         fprintf('Gösteri senaryosu kaldırıldı; model normal güne döndü.\n');
 
-    case 'veri'
+    case {'veri', 'ornek'}
         assignin('base', 'test_senaryo', s);
         temizle = onCleanup(@() evalin('base', 'clear test_senaryo')); %#ok<NASGU>
         sonuc = veri_aktar();
@@ -113,6 +116,9 @@ switch lower(islem)
         cizGrafik(T, E, png);
         fprintf('  Grafik: raporlar/gosteri_gunu.png\n');
         fprintf('  Veri  : ciktilar/test/ (_TEST)\n');
+        if strcmpi(islem, 'ornek')
+            ornekYaz(sonuc, E, kok);
+        end
         fprintf('  Senaryo kaldırıldı; model normal güne döndü.\n\n');
 
     otherwise
@@ -121,6 +127,66 @@ end
 end
 
 %% ---------------- yardımcı fonksiyonlar ----------------
+function ornekYaz(sonuc, E, kok)
+    % Tam günlük test çıktısından Git'e konacak kısa, kendi içinde tutarlı kesitler üretir.
+    % Satırlar CSV'den olduğu gibi kopyalanır (biçim ve run_id aynen korunur).
+    hedef = fullfile(kok, 'ornek_veri');
+    if ~exist(hedef, 'dir'), mkdir(hedef); end
+    kesitler = { 'kesinti',    12*60 + 25, 12*60 + 45;      % ad, ilk dakika, son dakika (dahil)
+                 'asiri_guc',  17*60 + 55, 18*60 + 30 };
+    olcum = satirlar(sonuc.olcum);                            % 1. satır başlık, dakika m -> satır m+2
+    olay  = satirlar(sonuc.olaylar);                          % 1. satır başlık, olay j -> satır j+1
+    metaKaynak = jsondecode(fileread(sonuc.meta, 'Encoding', 'UTF-8'));
+    fprintf('\nÖRNEK VERİ (Git için, ornek_veri/)\n');
+    for k = 1:size(kesitler, 1)
+        ad = kesitler{k,1};  d1 = kesitler{k,2};  d2 = kesitler{k,3};
+        oSec = [olcum(1); olcum((d1:d2) + 2)];
+        jSec = find(E.saat >= d1/60 & E.saat < (d2 + 1)/60);
+        eSec = [olay(1); olay(jSec + 1)];
+        oAd = sprintf('ornek_%s_olcum_TEST.csv', ad);
+        eAd = sprintf('ornek_%s_olaylar_TEST.csv', ad);
+        mAd = sprintf('ornek_%s_meta_TEST.json', ad);
+        yaz(fullfile(hedef, oAd), oSec);
+        yaz(fullfile(hedef, eAd), eSec);
+
+        m = metaKaynak;
+        m.ornek = struct( ...
+            'aciklama', ['ÖRNEK DOSYA (fixture). Gösteri günü test senaryosundan kısa bir kesittir. ' ...
+                         'Simülasyon verisidir; gerçek sayaç ya da kişisel veri içermez.'], ...
+            'kesit_bas', sprintf('%02d:%02d', floor(d1/60), mod(d1,60)), ...
+            'kesit_son', sprintf('%02d:%02d', floor(d2/60), mod(d2,60)), ...
+            'kaynak_satir_sayisi', metaKaynak.satir_sayisi, ...
+            'kaynak_olay_sayisi', metaKaynak.olay_sayisi, ...
+            'kaynak_gunluk_toplam', metaKaynak.gunluk_toplam, ...
+            'uretim', 'gosteri_gunu(''ornek'')');
+        m = rmfield(m, {'gunluk_toplam', 'dakika_sayisi_dilim'});  % kesitte gün toplamı yanıltıcı olur
+        m.satir_sayisi = numel(oSec) - 1;
+        m.olay_sayisi  = numel(eSec) - 1;
+        m.dosyalar = struct('olcum', oAd, 'olcum_sha256', sha256_dosya(fullfile(hedef, oAd)), ...
+                            'olaylar', eAd, 'olaylar_sha256', sha256_dosya(fullfile(hedef, eAd)));
+        fid = fopen(fullfile(hedef, mAd), 'w', 'n', 'UTF-8');
+        fprintf(fid, '%s\n', jsonencode(m, 'PrettyPrint', true));
+        fclose(fid);
+        fprintf('  %-10s %s–%s  %2d satır, %d olay  -> %s, %s, %s\n', ad, m.ornek.kesit_bas, ...
+                m.ornek.kesit_son, m.satir_sayisi, m.olay_sayisi, oAd, eAd, mAd);
+    end
+end
+
+function s = satirlar(dosya)
+    % UTF-8 metin dosyasını satırlara böler (boş satırlar atılır).
+    fid = fopen(dosya, 'r', 'n', 'UTF-8');
+    t = fread(fid, '*char')';
+    fclose(fid);
+    s = splitlines(string(t));
+    s(s == "") = [];
+end
+
+function yaz(dosya, s)
+    fid = fopen(dosya, 'w', 'n', 'UTF-8');
+    fprintf(fid, '%s\n', s);
+    fclose(fid);
+end
+
 function r = bul(E, kod, t1, t2)
     r = E(E.olay_kodu == kod & E.saat >= t1 & E.saat <= t2, :);
 end

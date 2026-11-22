@@ -1,0 +1,333 @@
+{
+  "sema_surumu": "1.0",
+  "run_id": "SIM-0001-20261122T183044-E5E0ACFB",
+  "veri_turu": "test",
+  "kaynak": "Simulink simülasyonu (Akilli_Sayac.slx); gerçek sayaç verisi değildir",
+  "sayac_id": "SIM-0001",
+  "gun": "2026-11-22",
+  "saat_dilimi": "+03:00",
+  "aralik_dk": 1,
+  "satir_sayisi": 21,
+  "olay_sayisi": 4,
+  "olusturma_zamani": "2026-11-22 18:31:01",
+  "matlab_surumu": "26.2.0.3386108 (R2026b)",
+  "calistirma_suresi_s": 14.2,
+  "ayarlar": {
+    "test_modu": "normal",
+    "koruma_aktif": 1,
+    "batarya_etkin": 1,
+    "P_sinir_W": 4000,
+    "P_geri_W": 3800,
+    "t_stop_saat": 24
+  },
+  "test_senaryosu": {
+    "sebeke_t": [
+      0,
+      12.5,
+      12.666666666666666,
+      20.166666666666668,
+      20.333333333333332,
+      21.166666666666668,
+      21.333333333333332,
+      25
+    ],
+    "sebeke_V": [
+      230,
+      0,
+      230,
+      184,
+      230,
+      264.5,
+      230,
+      230
+    ],
+    "camasir_t": [
+      0,
+      18,
+      18.25,
+      19,
+      20.5,
+      25
+    ],
+    "camasir_u": [
+      0,
+      1,
+      0,
+      1,
+      0,
+      0
+    ],
+    "klima_t": [
+      0,
+      18,
+      18.25,
+      20,
+      23,
+      25
+    ],
+    "klima_u": [
+      0,
+      1,
+      0,
+      1,
+      0,
+      0
+    ],
+    "baglan_t": [
+      0,
+      18.1,
+      18.116666666666667,
+      18.2,
+      18.216666666666665,
+      18.333333333333332,
+      18.35,
+      25
+    ],
+    "baglan_u": [
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0
+    ],
+    "t_kesme": 23.5
+  },
+  "gecersiz_dakika": 2,
+  "dosyalar": {
+    "olcum": "ornek_kesinti_olcum_TEST.csv",
+    "olcum_sha256": "cb9f97940a94c70fd8245c1863e9dbdc012e2de851c05c349c427c8dc5f43b04",
+    "olaylar": "ornek_kesinti_olaylar_TEST.csv",
+    "olaylar_sha256": "4f6853ab1e182c1c51bee267c634d4a58c2566b90fa30189fdc74049ce7cfb1e"
+  },
+  "sutunlar": [
+    {
+      "ad": "sayac_id",
+      "birim": "-",
+      "deger": "metin",
+      "aciklama": "Sayaç kimliği (simülasyon)"
+    },
+    {
+      "ad": "run_id",
+      "birim": "-",
+      "deger": "metin",
+      "aciklama": "Simülasyon çalıştırmasının kimliği; ölçüm, olay ve meta dosyalarında aynıdır"
+    },
+    {
+      "ad": "zaman",
+      "birim": "-",
+      "deger": "aralık başı",
+      "aciklama": "Aralığın başlangıcı, ISO 8601, yerel saat (+03:00); satır [zaman, zaman + 1 dk) aralığıdır"
+    },
+    {
+      "ad": "dakika",
+      "birim": "dk",
+      "deger": "aralık başı",
+      "aciklama": "Gün içindeki dakika, 0-1439"
+    },
+    {
+      "ad": "tarife_dilimi",
+      "birim": "-",
+      "deger": "aralık",
+      "aciklama": "1 gündüz (06-17), 2 puant (17-22), 3 gece (22-06)"
+    },
+    {
+      "ad": "gecerli",
+      "birim": "-",
+      "deger": "aralık",
+      "aciklama": "1 = ölçüm geçerli; 0 = RMS ölçüm penceresi (1 periyot = 1,2 profil dk) henüz dolmamış (günün ilk 2 dakikası)"
+    },
+    {
+      "ad": "v_rms_V",
+      "birim": "V",
+      "deger": "ortalama",
+      "aciklama": "Gerilim etkin değeri"
+    },
+    {
+      "ad": "i_rms_A",
+      "birim": "A",
+      "deger": "ortalama",
+      "aciklama": "Akım etkin değeri"
+    },
+    {
+      "ad": "p_W",
+      "birim": "W",
+      "deger": "ortalama",
+      "aciklama": "Sayaç noktasında şebekeden çekilen aktif güç (batarya dahil)"
+    },
+    {
+      "ad": "q_var",
+      "birim": "var",
+      "deger": "ortalama",
+      "aciklama": "Reaktif güç (+ endüktif, - kapasitif)"
+    },
+    {
+      "ad": "s_VA",
+      "birim": "VA",
+      "deger": "ortalama",
+      "aciklama": "Görünür güç, S = V x I"
+    },
+    {
+      "ad": "cos_phi",
+      "birim": "-",
+      "deger": "ortalama",
+      "aciklama": "Güç faktörü (modeldeki cos phi sinyalinin dakika ortalaması)"
+    },
+    {
+      "ad": "e_aralik_kWh",
+      "birim": "kWh",
+      "deger": "aralık farkı",
+      "aciklama": "Bu dakikada çekilen aktif enerji"
+    },
+    {
+      "ad": "e_toplam_kWh",
+      "birim": "kWh",
+      "deger": "aralık sonu",
+      "aciklama": "Gün başından beri toplam aktif enerji"
+    },
+    {
+      "ad": "e_t1_kWh",
+      "birim": "kWh",
+      "deger": "aralık sonu",
+      "aciklama": "T1 gündüz sayacı (kümülatif)"
+    },
+    {
+      "ad": "e_t2_kWh",
+      "birim": "kWh",
+      "deger": "aralık sonu",
+      "aciklama": "T2 puant sayacı (kümülatif)"
+    },
+    {
+      "ad": "e_t3_kWh",
+      "birim": "kWh",
+      "deger": "aralık sonu",
+      "aciklama": "T3 gece sayacı (kümülatif)"
+    },
+    {
+      "ad": "e_rend_kvarh",
+      "birim": "kvarh",
+      "deger": "aralık sonu",
+      "aciklama": "Endüktif reaktif enerji (kümülatif)"
+    },
+    {
+      "ad": "e_rkap_kvarh",
+      "birim": "kvarh",
+      "deger": "aralık sonu",
+      "aciklama": "Kapasitif reaktif enerji (kümülatif)"
+    },
+    {
+      "ad": "role_komut",
+      "birim": "-",
+      "deger": "aralık sonu",
+      "aciklama": "Kullanıcı / uzaktan röle komutu: 1 enerji ver, 0 kes"
+    },
+    {
+      "ad": "role",
+      "birim": "-",
+      "deger": "aralık sonu",
+      "aciklama": "Ana röle: 1 kapalı (enerji var), 0 açık"
+    },
+    {
+      "ad": "durum",
+      "birim": "-",
+      "deger": "aralık sonu",
+      "aciklama": "0 normal, 1 uyarı, 2 kesildi-onay bekliyor, 3 kullanıcı kesti, 4 şebeke yok, 5 gerilim aralık dışı"
+    },
+    {
+      "ad": "asiri_guc_uyari",
+      "birim": "-",
+      "deger": "en büyük",
+      "aciklama": "1 = dakika içinde aşırı güç uyarısı vardı"
+    },
+    {
+      "ad": "olay_sayisi",
+      "birim": "adet",
+      "deger": "toplam",
+      "aciklama": "Dakika içindeki olay sayısı (ayrıntı olaylar dosyasında)"
+    },
+    {
+      "ad": "p_bat_W",
+      "birim": "W",
+      "deger": "ortalama",
+      "aciklama": "Batarya gücü: + evi besliyor (deşarj), - şarj oluyor"
+    },
+    {
+      "ad": "soc",
+      "birim": "-",
+      "deger": "aralık sonu",
+      "aciklama": "Batarya doluluğu, 0-1"
+    },
+    {
+      "ad": "batarya_mod",
+      "birim": "-",
+      "deger": "aralık sonu",
+      "aciklama": "0 bekleme, 1 şarj, 2 deşarj"
+    }
+  ],
+  "kontroller": [
+    {
+      "kontrol": "Satır sayısı 1440",
+      "gecti": true,
+      "deger": "1440"
+    },
+    {
+      "kontrol": "Dakika enerjilerinin toplamı = gün sonu toplamı",
+      "gecti": true,
+      "deger": "fark 0.00e+00 kWh"
+    },
+    {
+      "kontrol": "T1 + T2 + T3 = toplam",
+      "gecti": true,
+      "deger": "fark 8.92e-13 kWh"
+    },
+    {
+      "kontrol": "Dilim bazında dakika enerjileri = T1/T2/T3 sayaçları",
+      "gecti": true,
+      "deger": "en büyük fark 6.68e-05 kWh"
+    },
+    {
+      "kontrol": "Ortalama güçten enerji = sayaç enerjisi",
+      "gecti": true,
+      "deger": "bağıl fark 8.92e-08"
+    },
+    {
+      "kontrol": "Her dakikada tek tarife dilimi",
+      "gecti": true,
+      "deger": "0 dakika sorunlu"
+    },
+    {
+      "kontrol": "Beklenmeyen sayısal olmayan değer yok",
+      "gecti": true,
+      "deger": "0 sinyalde sorun, 3 bilinen durum"
+    },
+    {
+      "kontrol": "SHA-256 özetleri hesaplandı",
+      "gecti": true,
+      "deger": "95f1a1eb200a..."
+    }
+  ],
+  "uyarilar": [],
+  "notlar": [
+    "Vrms: 13 örnek NaN (sıfıra çok yakın değerin karekökü, ör. kesintide); 0 alındı",
+    "Irms: 19 örnek NaN (sıfıra çok yakın değerin karekökü, ör. kesintide); 0 alındı",
+    "S: 32 örnek NaN (sıfıra çok yakın değerin karekökü, ör. kesintide); 0 alındı"
+  ],
+  "ornek": {
+    "aciklama": "ÖRNEK DOSYA (fixture). Gösteri günü test senaryosundan kısa bir kesittir. Simülasyon verisidir; gerçek sayaç ya da kişisel veri içermez.",
+    "kesit_bas": "12:25",
+    "kesit_son": "12:45",
+    "kaynak_satir_sayisi": 1440,
+    "kaynak_olay_sayisi": 15,
+    "kaynak_gunluk_toplam": {
+      "e_toplam_kWh": 12.670885670400761,
+      "e_t1_kWh": 1.9541116009091195,
+      "e_t2_kWh": 3.2692716381456686,
+      "e_t3_kWh": 7.4475024313468632,
+      "e_rend_kvarh": 6.2677091777236376,
+      "e_rkap_kvarh": 0.0041482693210294118
+    },
+    "uretim": "gosteri_gunu('ornek')"
+  }
+}

@@ -9,8 +9,10 @@ function sonuc = veri_aktar(varargin)
 %   veri_aktar('sayac_id', 'SIM-0002')      % başka bir sayaç kimliği
 %   s = veri_aktar;                         % dosya yolları ve kontrol sonucu da döner (gosteri_gunu kullanır)
 %
-% ŞEMA SÜRÜMÜ 0.1-TASLAK: sütun adları ve biçim yazılım ekibiyle (Muhammed) birlikte
-% kesinleşecek. Ayrıntılı açıklama: veri_sozlesmesi_taslak.md
+% ŞEMA SÜRÜMÜ 1.0: proje yöneticisinin 22.11.2026 kararlarıyla güncellendi.
+% Ayrıntılı açıklama: veri_sozlesmesi.md
+% Her çalıştırmanın benzersiz bir kimliği (run_id) vardır; ölçüm, olay ve meta dosyalarında aynıdır.
+% Meta dosyasında iki CSV dosyasının SHA-256 özetleri bulunur.
 %
 % Model sonuçları ile test verileri ayrı tutulur (proje kararı):
 %   - Komut penceresinde 'test_senaryo' YOKSA → normal gün     → ciktilar/model/
@@ -29,7 +31,7 @@ function sonuc = veri_aktar(varargin)
 % Para (TL) hesabı burada YAPILMAZ; yazılım katmanında yapılır (proje kararı).
 
 %% Ayarlar
-SEMA        = '0.1-TASLAK';
+SEMA        = '1.0';
 SAAT_DILIMI = '+03:00';          % Türkiye yıl boyu UTC+3 (yaz saati yok)
 mdl         = 'Akilli_Sayac';
 
@@ -56,6 +58,10 @@ kok = fileparts(mfilename('fullpath'));
 eskiDizin = pwd;
 geriDon = onCleanup(@() cd(eskiDizin)); %#ok<NASGU>
 cd(kok);
+
+% Çalıştırma kimliği: sayaç + zaman + rastgele 8 karakter (tempname benzersiz bir ad üretir)
+[~, tn] = fileparts(tempname);
+runId = sprintf('%s-%s-%s', sayacId, char(datetime('now', 'Format', 'yyyyMMdd''T''HHmmss')), upper(tn(end-7:end)));
 
 %% Model sonucu mu, test verisi mi?
 senaryoVar = evalin('base', 'exist(''test_senaryo'', ''var'') == 1 && isstruct(test_senaryo)');
@@ -206,6 +212,7 @@ end
 %% Sütun tanımları (CSV başlığı ve meta dosyası buradan üretilir)
 sutun = {
  'sayac_id',        '-',     'metin',        'Sayaç kimliği (simülasyon)';
+ 'run_id',          '-',     'metin',        'Simülasyon çalıştırmasının kimliği; ölçüm, olay ve meta dosyalarında aynıdır';
  'zaman',           '-',     'aralık başı',  'Aralığın başlangıcı, ISO 8601, yerel saat (+03:00); satır [zaman, zaman + 1 dk) aralığıdır';
  'dakika',          'dk',    'aralık başı',  'Gün içindeki dakika, 0-1439';
  'tarife_dilimi',   '-',     'aralık',       '1 gündüz (06-17), 2 puant (17-22), 3 gece (22-06)';
@@ -231,7 +238,7 @@ sutun = {
  'p_bat_W',         'W',     'ortalama',     'Batarya gücü: + evi besliyor (deşarj), - şarj oluyor';
  'soc',             '-',     'aralık sonu',  'Batarya doluluğu, 0-1';
  'batarya_mod',     '-',     'aralık sonu',  '0 bekleme, 1 şarj, 2 deşarj' };
-satirBicim = ['%s,%s,%d,%d,%d,%.3f,%.4f,%.2f,%.2f,%.2f,%.4f,' ...
+satirBicim = ['%s,%s,%s,%d,%d,%d,%.3f,%.4f,%.2f,%.2f,%.2f,%.4f,' ...
               '%.7f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,' ...
               '%d,%d,%d,%d,%d,%.2f,%.4f,%d\n'];
 
@@ -243,7 +250,7 @@ fprintf(fid, '%s\n', strjoin(sutun(:,1)', ','));
 for k = 1:nDk
     hh = floor((k-1)/60);  mm = mod(k-1, 60);
     zaman = sprintf('%sT%02d:%02d:00%s', gun, hh, mm, SAAT_DILIMI);
-    fprintf(fid, satirBicim, sayacId, zaman, k-1, dilim(k), gecerli(k), ...
+    fprintf(fid, satirBicim, sayacId, runId, zaman, k-1, dilim(k), gecerli(k), ...
         yuvarla(V(k),3), yuvarla(I(k),4), yuvarla(P(k),2), yuvarla(Q(k),2), yuvarla(Sg(k),2), yuvarla(pf(k),4), ...
         yuvarla(eAr(k),7), yuvarla(eTop(k),6), yuvarla(eT1(k),6), yuvarla(eT2(k),6), yuvarla(eT3(k),6), ...
         yuvarla(eRe(k),6), yuvarla(eRk(k),6), ...
@@ -255,13 +262,17 @@ fclose(fid);
 olayAd = sprintf('olaylar_%s%s.csv', gun, ek);
 fid = fopen(fullfile(cikisDir, olayAd), 'w', 'n', 'UTF-8');
 if fid < 0, error('Dosya açılamadı: %s (Excel''de açıksa kapatın)', olayAd); end
-fprintf(fid, 'sayac_id,zaman,saat,olay_kodu,olay,durum,red_maske,red_nedeni\n');
+fprintf(fid, 'sayac_id,run_id,zaman,saat,olay_kodu,olay,durum,red_maske,red_nedeni\n');
 for j = 1:numel(ot)
     sn = min(floor(ot(j)*3600), 86399);                        % gün içindeki saniye
     zaman = sprintf('%sT%02d:%02d:%02d%s', gun, floor(sn/3600), floor(mod(sn,3600)/60), mod(sn,60), SAAT_DILIMI);
-    fprintf(fid, '%s,%s,%.6f,%d,"%s",%d,%d,"%s"\n', sayacId, zaman, ot(j), oc(j), olayAdi(oc(j)), od(j), om(j), redYaz(om(j)));
+    fprintf(fid, '%s,%s,%s,%.6f,%d,"%s",%d,%d,"%s"\n', sayacId, runId, zaman, ot(j), oc(j), olayAdi(oc(j)), od(j), om(j), redYaz(om(j)));
 end
 fclose(fid);
+
+% Dosya özetleri (SHA-256): yazılım, dosyaların bozulmadan ve aynı çalıştırmadan geldiğini doğrular
+hOlcum = sha256_dosya(fullfile(cikisDir, olcumAd));
+hOlay  = sha256_dosya(fullfile(cikisDir, olayAd));
 
 %% Kontroller (yuvarlanmamış değerlerle)
 K = cell(0, 3);
@@ -279,11 +290,13 @@ d = abs(ePort - eTop(end)) / max(eTop(end), eps);
 K(end+1,:) = {'Ortalama güçten enerji = sayaç enerjisi', d < 1e-3, sprintf('bağıl fark %.2e', d)};
 K(end+1,:) = {'Her dakikada tek tarife dilimi', all(tekDilim), sprintf('%d dakika sorunlu', nnz(~tekDilim))};
 K(end+1,:) = {'Beklenmeyen sayısal olmayan değer yok', isempty(uyarilar), sprintf('%d sinyalde sorun, %d bilinen durum', numel(uyarilar), numel(notlar))};
+K(end+1,:) = {'SHA-256 özetleri hesaplandı', ~isempty(hOlcum) && ~isempty(hOlay), sprintf('%s...', hOlcum(1:min(12,end)))};
 nGec = nnz([K{:,2}]);
 
 %% Meta dosyası
 meta = struct();
 meta.sema_surumu         = SEMA;
+meta.run_id              = runId;
 meta.veri_turu           = veriTuru;
 meta.kaynak              = 'Simulink simülasyonu (Akilli_Sayac.slx); gerçek sayaç verisi değildir';
 meta.sayac_id            = sayacId;
@@ -301,7 +314,8 @@ meta.gunluk_toplam       = struct('e_toplam_kWh', eTop(end), 'e_t1_kWh', eT1(end
                                   'e_t3_kWh', eT3(end), 'e_rend_kvarh', eRe(end), 'e_rkap_kvarh', eRk(end));
 meta.dakika_sayisi_dilim = struct('t1', nnz(dilim==1), 't2', nnz(dilim==2), 't3', nnz(dilim==3));
 meta.gecersiz_dakika     = nnz(gecerli == 0);
-meta.dosyalar            = struct('olcum', olcumAd, 'olaylar', olayAd);
+meta.dosyalar            = struct('olcum', olcumAd, 'olcum_sha256', hOlcum, ...
+                                  'olaylar', olayAd, 'olaylar_sha256', hOlay);
 meta.sutunlar            = cell2struct(sutun, {'ad', 'birim', 'deger', 'aciklama'}, 2);
 meta.kontroller          = cell2struct(K, {'kontrol', 'gecti', 'deger'}, 2);
 meta.uyarilar            = uyarilar;
@@ -314,6 +328,7 @@ fclose(fid);
 
 %% Özet
 fprintf('\nVERİ AKTARIMI — %s verisi — gün %s — sayaç %s — şema %s\n', veriTuru, gun, sayacId, SEMA);
+fprintf('  run_id: %s\n', runId);
 fprintf('  Toplam %.4f kWh | T1 %.4f | T2 %.4f | T3 %.4f\n', eTop(end), eT1(end), eT2(end), eT3(end));
 fprintf('  Olay sayısı: %d\n', numel(ot));
 for k = 1:size(K,1)
@@ -331,7 +346,8 @@ if nargout > 0
     sonuc = struct('veri_turu', veriTuru, 'klasor', cikisDir, ...
                    'olcum', fullfile(cikisDir, olcumAd), 'olaylar', fullfile(cikisDir, olayAd), ...
                    'meta', fullfile(cikisDir, metaAd), ...
-                   'kontroller_gecti', nGec == size(K,1), 'olay_sayisi', numel(ot));
+                   'kontroller_gecti', nGec == size(K,1), 'olay_sayisi', numel(ot), ...
+                   'run_id', runId, 'olcum_sha256', hOlcum, 'olaylar_sha256', hOlay);
 end
 end
 

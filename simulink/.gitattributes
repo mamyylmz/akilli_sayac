@@ -6,3 +6,6 @@
 # Metin dosyaları
 *.m     text
 *.md    text
+# Örnek veri dosyaları (fixture): CSV özetleri (SHA-256) meta dosyasında; satır sonu dönüşümü yapılmaz
+ornek_veri/*.csv   -text
+ornek_veri/*.json  -text

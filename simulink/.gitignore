@@ -14,6 +14,6 @@ yedekler/
 # Raporlarda ekip üyelerinin öğrenci numaraları var: herkese açık depoya konmaz
 raporlar/
 
-# veri_aktar çıktıları (üretilen veri). Depoya girip girmeyeceğine yazılım ekibi karar verecek
-# (veri sözleşmesi K4). Test verisi ciktilar/test/ hiçbir zaman depoya girmez.
+# veri_aktar çıktıları: tam günlük model ve test çıktıları depoya girmez (proje kararı, 22.11.2026).
+# Küçük, anonim örnekler ornek_veri/ klasöründedir (gosteri_gunu('ornek') üretir).
 ciktilar/

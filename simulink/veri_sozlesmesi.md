@@ -75,7 +75,7 @@ Değer türü: **ortalama** = dakika içindeki zaman ağırlıklı ortalama; **a
 | `e_t3_kWh` | kWh | aralık sonu | T3 gece sayacı, net, kümülatif |
 | `e_rend_kvarh` | kvarh | aralık sonu | Endüktif reaktif enerji, kümülatif |
 | `e_rkap_kvarh` | kvarh | aralık sonu | Kapasitif reaktif enerji, kümülatif |
-| `role_komut` | – | aralık sonu | Kullanıcı / uzaktan röle komutu: 1 enerji ver, 0 kes |
+| `role_komut` | – | aralık sonu | Kullanıcı / uzaktan röle komutu: 1 enerji ver, 0 kes. Modelden loglanır (`Kesme_Testi` → `Role_Komut` sinyali) |
 | `role` | – | aralık sonu | Koruma kararı / ana röle: 1 kapalı (enerji var), 0 açık |
 | `durum` | – | aralık sonu | Sayaç durumu (§5.2) |
 | `asiri_guc_uyari` | – | en büyük | 1 = dakika içinde aşırı güç uyarısı vardı |
@@ -188,3 +188,4 @@ Normal günde (bataryalı) güç 4 kW sınırını aşmadığı için olay dosya
 |---|---|---|
 | 0.1-TASLAK | 20.11.2026 | İlk taslak, 26 sütun |
 | 1.0 | 22.11.2026 | Proje yöneticisinin kararları: 1 dk, aralık başı, CSV+CSV+JSON, `SIM-0001`; `run_id` sütunu ve SHA-256 özetleri; net enerji, negatif değer, geçersiz satır ve cos φ tanımları; örnek dosyalar ve Git kuralı |
+| 1.0 (biçim aynı) | 27.11.2026 | `role_komut` artık parametre değişkeninden hesaplanmıyor, modelden loglanan `Role_Komut` sinyalinden okunuyor. RMS bloklarındaki düzeltmeyle kesinti sırasında V, I, S artık NaN değil (önceden 0 alınıp "bilinen durum" notu yazılıyordu). Sütunlar ve biçim değişmedi |

@@ -24,9 +24,10 @@ function sonuc = veri_aktar(varargin)
 %   meta_<gun>.json       şema sürümü, çalıştırma ayarları, günlük toplamlar, kontroller
 %
 % Bu betik hesap yapmaz, modelin ürettiği sinyalleri dakikalara böler
-% (tarife dilimi ve röle komutu parametre dosyasındaki tablolardan okunur):
+% (tarife dilimi parametre dosyasındaki tablolardan okunur; röle komutu 27.11.2026'dan beri
+% Kesme_Testi → Role_Komut sinyalinden loglanır):
 %   ortalama     : V, I, P, Q, S, cos φ, batarya gücü (zaman ağırlıklı)
-%   aralık sonu  : kümülatif enerji sayaçları, röle, durum, SOC, batarya modu
+%   aralık sonu  : kümülatif enerji sayaçları, röle komutu, röle, durum, SOC, batarya modu
 %   aralık farkı : o dakikadaki enerji (enerji sayacının iki sınır arasındaki farkı)
 % Para (TL) hesabı burada YAPILMAZ; yazılım katmanında yapılır (proje kararı).
 
@@ -80,9 +81,11 @@ cikisDir = fullfile(kok, 'ciktilar', veriTuru);
 if ~exist(cikisDir, 'dir'), mkdir(cikisDir); end
 
 %% Kaydedilecek sinyaller: {blok adı, çıkış portu, kayıt adı}
-% Tarife dilimi ve röle komutu parametre dosyasındaki tablolardan okunur; bunlar modeldeki
-% Lookup (Gunduz_T1, Puant_T2, Gece_T3) ve Step (Kesme_Testi) bloklarının kullandığı değişkenlerin aynısıdır.
-kayit = { 'RMS Measurement',    1, 'Vrms';
+% Tarife dilimi parametre dosyasındaki tablolardan okunur (Gunduz_T1, Puant_T2, Gece_T3 Lookup
+% bloklarının kullandığı değişkenlerin aynısı). Röle komutu (role_komut) modelden loglanır:
+% Kesme_Testi bloğunun çıkışı = Role_Komut sinyali (Koruma_Mantigi'ye giren komut).
+kayit = { 'Kesme_Testi',        1, 'komut';
+          'RMS Measurement',    1, 'Vrms';
           'RMS Measurement1',   1, 'Irms';
           'Power Measurement',  1, 'P';
           'Power Measurement',  2, 'Q';
@@ -183,9 +186,8 @@ tb = evalin('base', '{T1_t, T1_u, T2_t, T2_u, T3_t, T3_u}');
 m1 = interp1(tb{1}, tb{2}, orta, 'previous') > 0.5;
 m2 = interp1(tb{3}, tb{4}, orta, 'previous') > 0.5;
 m3 = interp1(tb{5}, tb{6}, orta, 'previous') > 0.5;
-% Röle komutu: Kesme_Testi Step bloğu (t_kesme anına kadar 1, sonra 0)
-t_kesme = evalin('base', 't_kesme');
-komut   = double(son < t_kesme);
+% Röle komutu: Kesme_Testi → Role_Komut sinyali, modelden loglanan değer (aralık sonunda)
+komut = round(anlik(S.komut, son, 'onceki'));
 dilim    = 1*m1 + 2*m2 + 3*m3;
 tekDilim = (m1 + m2 + m3) == 1;
 % Geçerlilik: RMS ve güç ölçümü bir periyotluk pencereyle yapılır (1/f = 20 ms = 1,2 profil dk).
@@ -230,7 +232,7 @@ sutun = {
  'e_t3_kWh',        'kWh',   'aralık sonu',  'T3 gece sayacı (kümülatif)';
  'e_rend_kvarh',    'kvarh', 'aralık sonu',  'Endüktif reaktif enerji (kümülatif)';
  'e_rkap_kvarh',    'kvarh', 'aralık sonu',  'Kapasitif reaktif enerji (kümülatif)';
- 'role_komut',      '-',     'aralık sonu',  'Kullanıcı / uzaktan röle komutu: 1 enerji ver, 0 kes';
+ 'role_komut',      '-',     'aralık sonu',  'Kullanıcı / uzaktan röle komutu (Kesme_Testi → Role_Komut sinyali, modelden): 1 enerji ver, 0 kes';
  'role',            '-',     'aralık sonu',  'Ana röle: 1 kapalı (enerji var), 0 açık';
  'durum',           '-',     'aralık sonu',  '0 normal, 1 uyarı, 2 kesildi-onay bekliyor, 3 kullanıcı kesti, 4 şebeke yok, 5 gerilim aralık dışı';
  'asiri_guc_uyari', '-',     'en büyük',     '1 = dakika içinde aşırı güç uyarısı vardı';

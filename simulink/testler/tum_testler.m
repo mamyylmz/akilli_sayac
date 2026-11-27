@@ -1,6 +1,6 @@
 function tum_testler()
 %TUM_TESTLER  Akıllı Sayaç Simulink testlerinin hepsini sırayla çalıştırır ve özetler.
-% Kullanım: simulink klasöründeyken  addpath testler  ve  tum_testler  (~6 dk)
+% Kullanım: simulink klasöründeyken  addpath testler  ve  tum_testler  (~9 dk)
 % Model kaydedilmiş olmalıdır (Ctrl+S). Her test kendi sonuç dosyasını testler/ klasörüne yazar.
 
 testDir = fileparts(mfilename('fullpath'));
@@ -8,7 +8,9 @@ liste = { 'test_dogrulama',      'test_sonuclari.md',   'A–C ölçüm, enerji,
           'test_D_koruma',       'test_D_sonuclari.md', 'D koruma ve röle (6 senaryo)';
           'test_B_batarya',      'test_B_sonuclari.md', 'Batarya';
           'test_E_guc_kalitesi', 'test_E_sonuclari.md', 'E güç kalitesi (kesinti, çökme, yükselme)';
-          'test_F_talep',        'test_F_sonuclari.md', 'F talep yönetimi (yük kaydırma)' };
+          'test_F_talep',        'test_F_sonuclari.md', 'F talep yönetimi (yük kaydırma)';
+          'test_G_kesinti_batarya', 'test_G_sonuclari.md', 'G kesinti + batarya (sıfır geçişi regresyonu)';
+          'test_H_role_adaptoru',   'test_H_sonuclari.md', 'H röle adaptörü (komut, koruma, fail-closed)' };
 sonuc = cell(size(liste,1), 1);
 for k = 1:size(liste,1)
     fprintf('\n================ %s ================\n', liste{k,1});

@@ -17,3 +17,6 @@ raporlar/
 # veri_aktar çıktıları: tam günlük model ve test çıktıları depoya girmez (proje kararı, 22.11.2026).
 # Küçük, anonim örnekler ornek_veri/ klasöründedir (gosteri_gunu('ornek') üretir).
 ciktilar/
+
+# Röle adaptörünün çalışma dosyaları (gelen komutlar, cevaplar, kanıtlar, defter): depoya girmez
+role_komut/

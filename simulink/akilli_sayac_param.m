@@ -12,6 +12,7 @@
 %   19.11.2026 - Poyraz: şebeke kontrollü gerilim kaynağı ile modellendi (gerilim profili)
 %   19.11.2026 - Poyraz: D aşaması koruma parametreleri, zaman ölçekleri, test modları (Muhammed onayı)
 %   19.11.2026 - Poyraz: ev tipi batarya (gece şarj, puantta deşarj; ekip kararı)
+%   27.11.2026 - Poyraz: Kesme_Testi komut tablosu (rk_t/rk_u); röle adaptörü için 1->0 ve 0->1 komut
 
 %% Zaman ölçeği
 % 1 s simülasyon = 1 saat gerçek zaman  ->  24 s simülasyon = 1 gün.
@@ -105,8 +106,15 @@ C_kap = Q_kap/(Vrms^2*w);           % F  = 60.17 uF
 kap_t = [0 25];                     % normal gün: hiç açılmaz
 kap_u = [0 0];
 
-%% Ana röle (uzaktan kesme-açma) - test
-t_kesme = 25;     % saat; 24'ten büyük = gün içinde kesme yok (test şimdilik kapalı)
+%% Ana röle (uzaktan kesme-açma) komutu – Kesme_Testi bloğu
+% Kesme_Testi, Role_Komut sinyalini (1 = enerji ver, 0 = kes) saat tablosundan üretir
+% (Lookup "Flat": basamaklı):  rk_t = saat noktaları, rk_u = o saatten itibaren komut.
+% Varsayılan: tablo aşağıda t_kesme'den üretilir (t_kesme anına kadar 1, sonra 0); t_kesme
+% kullanan testler aynen çalışır. Röle adaptörü (role_adaptoru.m) tabloyu test_senaryo.rk_t/rk_u
+% ile doğrudan verir; böylece komut hem 1->0 hem 0->1 olabilir.
+t_kesme = 25;     % saat; 24'ten büyük = gün içinde kesme yok
+rk_t = [];        % boşsa t_kesme'den üretilir (Türetilen değerler bölümü)
+rk_u = [];
 
 %% ===================== D AŞAMASI: KORUMA VE RÖLE MANTIĞI =====================
 % ZAMAN ÖLÇEKLERİ – modelde iki ayrı ölçek vardır:
@@ -197,6 +205,16 @@ if exist('test_senaryo', 'var') && isstruct(test_senaryo)
 end
 
 %% Türetilen değerler (test senaryosundan SONRA hesaplanır; elle değiştirmeyin)
+% Kesme_Testi komut tablosu: verilmediyse t_kesme'den üretilir
+if isempty(rk_t) || isempty(rk_u)
+    if t_kesme <= 0
+        rk_t = [0 25];          rk_u = [0 0];
+    elseif t_kesme < 25
+        rk_t = [0 t_kesme 25];  rk_u = [1 0 0];
+    else
+        rk_t = [0 25];          rk_u = [1 1];
+    end
+end
 % Koruma açık mı?  Yalnızca 'measurement_test' modunda kapalı.
 koruma_aktif = double(~strcmp(test_modu, 'measurement_test'));
 

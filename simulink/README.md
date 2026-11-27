@@ -1,6 +1,6 @@
 # Akıllı Sayaç Projesi – Simulink Modeli (v2, ev tipi)
 
-**Durum tarihi:** 20.11.2026  **Hazırlayan:** Poyraz Ege Taş (şebeke ve devre tasarımı)
+**Durum tarihi:** 27.11.2026  **Hazırlayan:** Poyraz Ege Taş (şebeke ve devre tasarımı)
 
 ## 1. Klasördeki dosyalar
 
@@ -16,8 +16,11 @@
 | `testler/test_B_batarya.m` | Batarya: bataryalı gün, ada çalışma önleme, ölçüm testi modunda kapalı olma |
 | `testler/test_E_guc_kalitesi.m` | E aşaması: kesinti, gerilim çökmesi ve yükselmesi; olay başlangıcı, süresi, ölçülen değerler, sistem tepkisi |
 | `testler/test_F_talep.m` | F aşaması: çamaşır makinesini gece tarifesine kaydırma (enerji korunur, T2 → T3) |
+| `testler/test_G_kesinti_batarya.m` | G: kesinti + batarya aynı günde (sıfır geçişi regresyonu, 22.11.2026) |
+| `testler/test_H_role_adaptoru.m` | H: röle adaptörü — kesme, koruma kilitliyken red, güvenli koşulda kabul, süresi dolmuş / tekrar / bozuk komut, fail-closed (17 kontrol) |
 | `testler/tum_testler.m` | Bütün testleri sırayla çalıştırıp genel özet verir |
 | `veri_aktar.m` | Yazılıma veri aktarımı (şema 1.0): modeli bir gün çalıştırır, 1 dakikalık ölçüm CSV + olay CSV + meta JSON yazar (`ciktilar/`). Her çalıştırmanın `run_id`'si ve CSV'lerin SHA-256 özetleri vardır; 8 tutarlılık kontrolü |
+| `role_adaptoru.m` | Röle adaptörü: yazılımdan gelen röle komutlarını (`role_komut/gelen/*.json`) modelde uygular, `Kesme_Testi → Role_Komut → Koruma_Mantigi` sinyallerini loglar ve `applied` / `rejected` cevabını yazar (fail-closed). Bkz. bölüm 8c |
 | `sha256_dosya.m` | Bir dosyanın SHA-256 özetini hesaplar (`veri_aktar` ve `gosteri_gunu` kullanır) |
 | `gosteri_gunu.m` | Sunum için hazır senaryo: kesinti, aşırı güç kesmesi, iki red + kabul, gerilim çökmesi/yükselmesi, kullanıcı kesmesi tek günde. `gosteri_gunu` (canlı izleme), `gosteri_gunu('veri')` (olaylı TEST verisi + 13 kontrol + grafik), `gosteri_gunu('ornek')` (ayrıca `ornek_veri/` kesitleri), `gosteri_gunu('kapat')` |
 | `veri_sozlesmesi.md` | Veri sözleşmesi 1.0: proje kararları (22.11.2026), sütunlar, birimler, kodlar; net enerji, negatif değer, geçersiz satır ve cos φ tanımları; `run_id` ve SHA-256 doğrulaması |
@@ -26,6 +29,7 @@
 | `testler/test_sonuclari.md` / `.xlsx` | Betiğin ürettiği sonuçlar: her ölçüm ayrı satırda, sayısal sütunlar (beklenen / gerçekleşen / fark / hata / sonuç) |
 | `testler/teorik_hesaplar.md` | Beklenen değerlerin hesabı (zaman dilimi bazında P, Q, S, kWh, kVARh; kapasitif test yükü; röle testi) |
 | `testler/C_asamasi_dogrulama.xlsx` | Formüllü doğrulama çalışma kitabı (C aşaması, 18.11.2026 çalıştırması): cihaz hesapları, dilim bazında enerji, tarife dağılımı |
+| `role_komut/` | Röle adaptörünün çalışma klasörü (gelen, giden, kanit, islenen, defter). Depoya gönderilmez (`.gitignore`) |
 | `raporlar/` | Haftalık raporlar ve proje kararlarının karşılanma raporu |
 
 **Git deposu:** https://github.com/mamyylmz/akilli_sayac → `simulink/` klasörü. Depoda `yedekler/` ve `raporlar/` bulunmaz (`.gitignore`): Git her sürümü zaten sakladığı için yedeklere gerek yok; raporlarda ekip üyelerinin öğrenci numaraları olduğu için herkese açık depoya konmaz.
@@ -36,7 +40,7 @@
 2. `Akilli_Sayac.slx` modelini açın ve **Run**'a basın (5–10 sn sürer).
 3. Sonuçlar: **Scope1** (I_rms, P, Q, V_rms), **Enerji_Scope**, **GucFaktoru_Scope**, Display blokları ve **HAN – Ev İçi Müşteri Ekranı** (Dashboard).
 4. Sunum için: SIMULATION › Run (▼) › Simulation Pacing › hız 1 → bir gün 24 saniyede, HAN ekranı canlı izlenir.
-5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~6 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
+5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~9 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
 6. **Yazılıma veri aktarımı:** Modeli kaydedin. `simulink` klasöründeyken `veri_aktar` yazın (~1 dk). Dosyalar `ciktilar/model/` klasörüne yazılır. Ayrıntı: `veri_sozlesmesi.md`.
 7. **Sunum / gösteri günü:** `gosteri_gunu` yazın, modelde Run'a basın ve HAN ekranını izleyin (Simulation Pacing hızı 0.1 önerilir). Bitince `gosteri_gunu('kapat')`. Olaylı test verisi ve grafik için: `gosteri_gunu('veri')`; Git'teki örnek dosyaları yenilemek için: `gosteri_gunu('ornek')`.
 
@@ -57,9 +61,9 @@ Model daha yeni bir MATLAB sürümünde kaydedildi. Daha eski sürümde açılma
 |---|---|---|
 | Şebeke | AC Voltage Source (230 V rms, 50 Hz) | Simscape Foundation |
 | Ölçüm noktası | Current Sensor, Voltage Sensor | Gerilim **şebeke tarafında**: röle açıkken de gerilim ölçülür |
-| Ana röle (uzaktan kesme-açma) | Switch `Ana_Role` | Komut sinyali `Role_Komut`. Şu an `Kesme_Testi` Step bloğundan geliyor (test kapalı) |
+| Ana röle (uzaktan kesme-açma) | Switch `Ana_Role` | Komut sinyali `Role_Komut`, `Kesme_Testi` saat tablosundan gelir (`rk_t / rk_u`, Lookup Flat; varsayılan `t_kesme`'den üretilir). Röle adaptörü komutu bu tabloya yazar |
 | Ev yükleri | Baz yük (R-L) + 6 cihaz alt sistemi | Her cihaz: saat → program tablosu → anahtar → R (motorlularda R-L) |
-| Ölçüm | RMS Measurement (×2), Power Measurement | Base frequency 50 Hz, bir periyotluk pencere |
+| Ölçüm | RMS Measurement (×2), Power Measurement | Base frequency 50 Hz, bir periyotluk pencere. RMS bloklarında karekökten önce `Negatif_Kirp` (0…∞) var; bkz. bölüm 8 |
 | Enerji sayacı | Gain (`k_kWh`) + Integrator | Toplam kWh |
 | Üç zamanlı sayaç | Tarife maskeleri (Lookup, Flat) × güç → 3 Integrator | T1 gündüz, T2 puant, T3 gece |
 | Reaktif enerji | Saturation ile endüktif/kapasitif ayrımı → 2 Integrator | Yalnızca izleme (mesken muaf) |
@@ -134,6 +138,7 @@ T1–T11 ilk olarak Scope ve Display değerleriyle elle doğrulandı. T4 ve T6�
 - Reaktif enerji değerleri (E_Rend, E_Rkap) yalnızca bu tek fazlı, sinüzoidal model varsayımları kapsamında geçerlidir.
 - **Test senaryosu:** Parametre dosyasının sonundaki bölüm, çalışma alanında `test_senaryo` adlı bir struct varsa onun alanlarını kullanır (ör. `test_senaryo.t_kesme = 23`). Test betiği bunu kendisi açar ve kapatır. Elle denediyseniz iş bitince `clear test_senaryo` yazın.
 - **cos φ işaretsizdir.** Kapasitif yükte de pozitif görünür; yükün endüktif mi kapasitif mi olduğunu Q'nun işareti gösterir.
+- **RMS ölçümü (27.11.2026):** Kütüphane RMS bloğu (`eeRmsMeasurement`) RMS'i u² → integral → periyodik fark (şimdiki − bir periyot önceki integral) → 1/T → Sqrt zinciriyle hesaplar. Kesintide (u = 0) bu fark yuvarlama hatasıyla çok küçük negatif çıkıp Sqrt uyarısı ve NaN üretiyordu. İki RMS bloğunun kütüphane bağlantısı koparıldı ve Sqrt'den hemen önce `Negatif_Kirp` (Saturation 0…∞, sıfır geçişi kapalı) eklendi. Hesap aynı; yalnızca minik negatif değerler 0 olur.
 - Test betiği çalışmadan önce modelin kaydedilmiş olmasını ister (kaydedilmemiş değişiklik test sonucunu belirsiz yapar).
 - Modeli kaydederken **Save As kullanmayın** (sizi yeni dosyaya geçirir). Yedekler `yedekler/` klasörüne tarihli adla kopyalanır. Dosya adlarında **nokta ve boşluk kullanmayın**; Simulink model adı olarak kabul etmez.
 
@@ -171,6 +176,19 @@ Olay kodları: 10/11 uyarı başladı/bitti, 20 kesme, 30/31 bağlantı kabul/re
 | `P_batarya`, `SOC`, `Batarya_Mod` | Batarya gücü (W; + deşarj, − şarj), doluluk, mod (0 bekleme, 1 şarj, 2 deşarj) |
 
 **Test sonuçları (19.11.2026):** C 93/93 (measurement_test), D 39/39, batarya testi: `test_B_batarya` (20.11.2026).
+
+## 8c. Röle adaptörü (27.11.2026)
+
+Yazılım dalındaki `docs/SIMULINK_RELAY_PROTOCOL.md` protokolüne göre dosya tabanlı yerel adaptör: `role_adaptoru` (simulink klasöründeyken).
+
+1. Yazılım komutu `role_komut/gelen/` klasörüne yazar (geçici adla yazıp `.json` olarak yeniden adlandırır; yarım dosya okunmaz). Alanlar: `schemaVersion` 1.0.0, `commandId` (UUID), `meterId` SIM-0001, `createdAt`, `expiresAt` (ISO 8601, saat dilimli), `requestedRelayState` (`energized` / `deenergized`).
+2. Adaptör komutu doğrular (alanlar, sayaç, süre, aynı `commandId` daha önce işlendi mi), `createdAt` saatini (+03:00) simülasyon saatine çevirir ve o andan itibaren `Kesme_Testi` tablosunu istenen değere ayarlar. `energized` komutunda aynı anda yetkili yeniden bağlanma isteği de verilir; koruma kilitliyse kararı `Koruma_Mantigi` verir. Koruma mantığı değiştirilmez.
+3. Model çalıştırılır; `Kesme_Testi` çıkışı (komut) ve `Koruma_Mantigi`'nin role, durum, olay, red_maske çıkışları **modelden loglanır** (`role_komut/kanit/<commandId>.json`).
+4. Cevap `role_komut/giden/<commandId>.json` dosyasına atomik yazılır: `schemaVersion, commandId, meterId, completedAt, status, relayState, code, message`.
+
+**Fail-closed:** `applied` yalnızca model hatasız çalıştığında, beş sinyalin hepsi loglandığında, komut sinyali istenen değerde olduğunda, red_maske okunup 0 olduğunda ve röle istenen durumdayken yazılır. Kodlar: `APPLIED`, `PROTECTION_REJECTED`, `NOT_APPLIED`, `COMMAND_NOT_INJECTED`, `EXPIRED`, `INVALID_COMMAND`, `OUT_OF_RANGE`, `SIMULATION_FAILED`, `LOG_MISSING`, `MASK_INVALID`. Aynı `commandId` ikinci kez uygulanmaz (`islenen_komutlar.csv`).
+
+İmza: cevap şu an imzasızdır; imzanın hangi tarafta atılacağı ekipte netleşince eklenecek. Test: `test_H_role_adaptoru` (17 kontrol).
 
 ## 9. Sıradaki adımlar (Simulink tarafı)
 

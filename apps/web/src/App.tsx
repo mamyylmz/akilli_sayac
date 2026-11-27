@@ -27,6 +27,8 @@ interface DashboardResponse {
     apparent_power_va?: number;
     cos_phi?: number;
     true_power_factor?: number;
+    relay_closed?: 0 | 1;
+    relay_command?: 0 | 1;
     total_energy_kwh?: number;
     t1_kwh?: number;
     t2_kwh?: number;
@@ -252,6 +254,13 @@ export function App() {
   const measurement = dashboard?.measurement;
   const energy = dashboard?.energy;
   const meter = dashboard?.meter;
+  const run = dashboard?.run;
+  let relayState = meter?.relay_state;
+  if (run) {
+    const relayClosed = measurement?.relay_closed;
+    relayState =
+      relayClosed === undefined ? undefined : relayClosed === 1 ? "energized" : "deenergized";
+  }
   const tariff = dashboard?.billing?.tariff;
   const bill = dashboard?.billing?.bill;
   const energyTotal = energy?.total_kwh ?? energy?.total_active_kwh;
@@ -271,8 +280,9 @@ export function App() {
       </header>
 
       <section className="notice" aria-label="Veri güvenilirliği">
-        <strong>Kaynak sınırı:</strong> Bu veriler Simulink simülasyonundan gelir; SHA-256 dosya
-        bütünlüğünü doğrular, fiziksel sayaç kimliğini doğrulamaz.
+        <strong>Kaynak sınırı:</strong>{" "}
+        {run?.source ?? "Bu veriler Simulink simülasyonundan gelir."} SHA-256 dosya bütünlüğünü
+        doğrular, fiziksel sayaç kimliğini doğrulamaz.
       </section>
 
       <form onSubmit={(event) => void connect(event)} className="connection-form">
@@ -368,11 +378,14 @@ export function App() {
             }
           />
           <Metric label="Şebeke" value={meter?.grid_state} />
-          <Metric
-            label="Röle"
-            value={meter?.relay_state}
-            note="CSV içe aktarımı röle komutu göndermez"
-          />
+          <Metric label="Röle" value={relayState} />
+          {run ? (
+            <Metric
+              label="Röle komutu"
+              value={measurement?.relay_command}
+              note="1: enerji ver, 0: kes"
+            />
+          ) : null}
           <Metric
             label="Aşırı güç alarmı"
             value={meter ? (meter.overload_active ? "Aktif" : "Yok") : undefined}

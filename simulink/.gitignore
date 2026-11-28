@@ -20,3 +20,10 @@ ciktilar/
 
 # Röle adaptörünün çalışma dosyaları (gelen komutlar, cevaplar, kanıtlar, defter): depoya girmez
 role_komut/
+
+# Testlerin her çalıştırmada ürettiği sonuç dosyaları: depoya girmez (28.11.2026).
+# Hangi commit'e ait oldukları kabul_paketi zip'inde (manifesto.json) kayıtlıdır.
+testler/*_sonuclari.md
+testler/*_sonuclari.xlsx
+testler/olay_kayitlari.md
+testler/guc_kalitesi_olaylari.md

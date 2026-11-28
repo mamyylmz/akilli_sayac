@@ -1,4 +1,4 @@
-function gosteri_gunu(islem)
+function cikti = gosteri_gunu(islem)
 %GOSTERI_GUNU  Sunum için hazır senaryo: sayacın bütün özellikleri tek bir günde.
 % Konum : Akilli_Sayac/simulink/gosteri_gunu.m
 %
@@ -9,6 +9,8 @@ function gosteri_gunu(islem)
 %   gosteri_gunu('ornek')   % 'veri' ile aynı + Git'e konacak küçük örnek dosyalar (ornek_veri/):
 %                           % 12:25-12:45 kesinti ve 17:55-18:30 aşırı güç kesitleri
 %   gosteri_gunu('kapat')   % senaryoyu kaldırır; model normal güne döner
+%   c = gosteri_gunu('veri') % aynı; ayrıca c.aktarim (veri_aktar sonucu), c.kontroller, c.gecti döner
+%                           % (kabul_paketi bunu kullanır)
 %
 % Senaryo (normal günden farkları):
 %   12:30-12:40  şebeke kesintisi                               -> durum 4 (lacivert), olay 40/41
@@ -120,10 +122,14 @@ switch lower(islem)
             ornekYaz(sonuc, E, kok);
         end
         fprintf('  Senaryo kaldırıldı; model normal güne döndü.\n\n');
+        if nargout > 0
+            cikti = struct('aktarim', sonuc, 'kontroller', {K}, 'gecti', all([K{:,2}]), 'grafik', png);
+        end
 
     otherwise
         error('Bilinmeyen işlem: %s. Kullanım: gosteri_gunu, gosteri_gunu(''veri''), gosteri_gunu(''kapat'')', islem);
 end
+if nargout > 0 && ~exist('cikti', 'var'), cikti = []; end
 end
 
 %% ---------------- yardımcı fonksiyonlar ----------------

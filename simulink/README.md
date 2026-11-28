@@ -1,6 +1,6 @@
 # Akıllı Sayaç Projesi – Simulink Modeli (v2, ev tipi)
 
-**Durum tarihi:** 27.11.2026  **Hazırlayan:** Poyraz Ege Taş (şebeke ve devre tasarımı)
+**Durum tarihi:** 28.11.2026  **Hazırlayan:** Poyraz Ege Taş (şebeke ve devre tasarımı)
 
 ## 1. Klasördeki dosyalar
 
@@ -19,6 +19,7 @@
 | `testler/test_G_kesinti_batarya.m` | G: kesinti + batarya aynı günde (sıfır geçişi regresyonu, 22.11.2026) |
 | `testler/test_H_role_adaptoru.m` | H: röle adaptörü — kesme, koruma kilitliyken red, güvenli koşulda kabul, süresi dolmuş / tekrar / bozuk komut, fail-closed (17 kontrol) |
 | `testler/tum_testler.m` | Bütün testleri sırayla çalıştırıp genel özet verir |
+| `kabul_paketi.m` | Kabul kanıt paketi: bütün testler + iki export + gerçek modelde üç röle komutu, hepsi tek commit'e bağlı tek zip (`ciktilar/kabul/`). Bkz. bölüm 8d |
 | `veri_aktar.m` | Yazılıma veri aktarımı (şema 1.0): modeli bir gün çalıştırır, 1 dakikalık ölçüm CSV + olay CSV + meta JSON yazar (`ciktilar/`). Her çalıştırmanın `run_id`'si ve CSV'lerin SHA-256 özetleri vardır; 8 tutarlılık kontrolü |
 | `role_adaptoru.m` | Röle adaptörü: yazılımdan gelen röle komutlarını (`role_komut/gelen/*.json`) modelde uygular, `Kesme_Testi → Role_Komut → Koruma_Mantigi` sinyallerini loglar ve `applied` / `rejected` cevabını yazar (fail-closed). Bkz. bölüm 8c |
 | `sha256_dosya.m` | Bir dosyanın SHA-256 özetini hesaplar (`veri_aktar` ve `gosteri_gunu` kullanır) |
@@ -26,7 +27,7 @@
 | `veri_sozlesmesi.md` | Veri sözleşmesi 1.0: proje kararları (22.11.2026), sütunlar, birimler, kodlar; net enerji, negatif değer, geçersiz satır ve cos φ tanımları; `run_id` ve SHA-256 doğrulaması |
 | `ornek_veri/` | Git'teki küçük örnek dosyalar (fixture): gösteri gününden kesinti (12:25–12:45) ve aşırı güç (17:55–18:30) kesitleri; simülasyon verisi, satır sonu dönüşümü kapalı |
 | `ciktilar/model/`, `ciktilar/test/` | `veri_aktar` çıktıları; normal gün ve test senaryoları ayrı klasörde. Tam günlük çıktılar depoya gönderilmez (proje kararı, `.gitignore`) |
-| `testler/test_sonuclari.md` / `.xlsx` | Betiğin ürettiği sonuçlar: her ölçüm ayrı satırda, sayısal sütunlar (beklenen / gerçekleşen / fark / hata / sonuç) |
+| `testler/*_sonuclari.md` / `.xlsx`, `olay_kayitlari.md`, `guc_kalitesi_olaylari.md` | Testlerin her çalıştırmada ürettiği sonuçlar (her ölçüm ayrı satırda: beklenen / gerçekleşen / fark / hata / sonuç). 28.11.2026'dan itibaren depoya gönderilmez (`.gitignore`): hangi commit'e ait oldukları `kabul_paketi` zip'inde kayıtlıdır |
 | `testler/teorik_hesaplar.md` | Beklenen değerlerin hesabı (zaman dilimi bazında P, Q, S, kWh, kVARh; kapasitif test yükü; röle testi) |
 | `testler/C_asamasi_dogrulama.xlsx` | Formüllü doğrulama çalışma kitabı (C aşaması, 18.11.2026 çalıştırması): cihaz hesapları, dilim bazında enerji, tarife dağılımı |
 | `role_komut/` | Röle adaptörünün çalışma klasörü (gelen, giden, kanit, islenen, defter). Depoya gönderilmez (`.gitignore`) |
@@ -41,6 +42,7 @@
 3. Sonuçlar: **Scope1** (I_rms, P, Q, V_rms), **Enerji_Scope**, **GucFaktoru_Scope**, Display blokları ve **HAN – Ev İçi Müşteri Ekranı** (Dashboard).
 4. Sunum için: SIMULATION › Run (▼) › Simulation Pacing › hız 1 → bir gün 24 saniyede, HAN ekranı canlı izlenir.
 5. **Testler:** Modeli kaydedin (Ctrl+S). `simulink` klasöründeyken komut penceresine `addpath testler` ve ardından `tum_testler` yazın (~9 dk; hepsini çalıştırır) ya da tek bir test adını yazın (ör. `test_D_koruma`).
+   **Kabul için:** GitHub Desktop'ta "No local changes" iken `kabul_paketi` yazın (~12 dk). Zip `ciktilar/kabul/` klasörüne yazılır.
 6. **Yazılıma veri aktarımı:** Modeli kaydedin. `simulink` klasöründeyken `veri_aktar` yazın (~1 dk). Dosyalar `ciktilar/model/` klasörüne yazılır. Ayrıntı: `veri_sozlesmesi.md`.
 7. **Sunum / gösteri günü:** `gosteri_gunu` yazın, modelde Run'a basın ve HAN ekranını izleyin (Simulation Pacing hızı 0.1 önerilir). Bitince `gosteri_gunu('kapat')`. Olaylı test verisi ve grafik için: `gosteri_gunu('veri')`; Git'teki örnek dosyaları yenilemek için: `gosteri_gunu('ornek')`.
 
@@ -109,7 +111,7 @@ En yüksek anlık güç: 18:00–18:10 arasında **4,54 kW** (su ısıtıcı + f
 ## 7. Yapılan testler
 
 T1–T11 ilk olarak Scope ve Display değerleriyle elle doğrulandı. T4 ve T6–T13 ile parametre/katsayı kontrolleri (C0–C4) `testler/test_dogrulama.m` ile **otomatik olarak** tekrarlanır.
-**Güncel sonuç (19.11.2026 18:02, R2026b): 92 GEÇTİ, 0 KALDI, 0 BEKLİYOR** → `testler/test_sonuclari.md`
+**Son tam çalıştırma (27.11.2026, commit 7035607, R2026b): 7 grup, 212 GEÇTİ, 0 KALDI** (A–C 93, D 39, batarya 23, E 26, F 7, G 7, H 17). Sonuç dosyaları her çalıştırmada `testler/` altında yeniden üretilir ve depoya gönderilmez; commit'e bağlı kanıt için `kabul_paketi` (bölüm 8d).
 
 | Test | İçerik | Sonuç |
 |---|---|---|
@@ -189,6 +191,19 @@ Yazılım dalındaki `docs/SIMULINK_RELAY_PROTOCOL.md` protokolüne göre dosya 
 **Fail-closed:** `applied` yalnızca model hatasız çalıştığında, beş sinyalin hepsi loglandığında, komut sinyali istenen değerde olduğunda, red_maske okunup 0 olduğunda ve röle istenen durumdayken yazılır. Kodlar: `APPLIED`, `PROTECTION_REJECTED`, `NOT_APPLIED`, `COMMAND_NOT_INJECTED`, `EXPIRED`, `INVALID_COMMAND`, `OUT_OF_RANGE`, `SIMULATION_FAILED`, `LOG_MISSING`, `MASK_INVALID`. Aynı `commandId` ikinci kez uygulanmaz (`islenen_komutlar.csv`).
 
 İmza: cevap şu an imzasızdır; imzanın hangi tarafta atılacağı ekipte netleşince eklenecek. Test: `test_H_role_adaptoru` (17 kontrol).
+
+## 8d. Kabul paketi (28.11.2026)
+
+`kabul_paketi` (simulink klasöründeyken) bütün kanıtı **tek bir commit'e bağlı** tek bir zip'te toplar:
+
+1. Git commit SHA'sı ve dalı okunur. İzlenen dosyalarda kaydedilmemiş değişiklik ya da açık modelde kaydedilmemiş değişiklik varsa çalışmaz (kanıt o commit'e ait olmazdı). Çalışma bitince aynı kontrol tekrarlanır.
+2. MATLAB, Simulink, Simscape ve Simscape Electrical sürümleri yazılır.
+3. `tum_testler` çalışır; grup grup GEÇTİ/KALDI sayıları (A–C 93, D 39, batarya 23, E 26, F 7, G 7 = 195; H 17) ve sonuç dosyaları pakete girer.
+4. `veri_aktar` (normal gün, `model`) ve `gosteri_gunu('veri')` (olaylı gün, `test`) çalışır; Contract 1.0 dosyaları değiştirilmeden kopyalanır.
+5. `role_adaptoru` gerçek modelde üç komutla çalışır: 12:00 kesme (beklenen `applied`), aşırı güç kesmesinden sonra 18:10 enerji verme (beklenen `rejected` / `PROTECTION_REJECTED`, red_maske 2), 18:20 enerji verme (beklenen `applied`). Komut, cevap, kanıt ve defter dosyaları saklanır.
+6. `manifesto.json`: yukarıdakilerin hepsi, kaynak dosyaların Git blob kimlikleri (`git ls-tree -r <commit> simulink/` ile karşılaştırılabilir) ve paketteki her dosyanın SHA-256'sı. `OZET.md` kısa, okunur özettir; `kabul_gunlugu.txt` komut penceresi çıktısının tamamıdır.
+
+Sonuç ancak bütün adımlar geçerse ve çalışma alanı başta ve sonda temizse **PASS** olur. Paket `ciktilar/kabul/` altında kalır (Git dışında); zip ekiple ayrıca paylaşılır.
 
 ## 9. Sıradaki adımlar (Simulink tarafı)
 

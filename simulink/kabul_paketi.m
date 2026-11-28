@@ -24,7 +24,7 @@ function sonuc = kabul_paketi(varargin)
 %      (ciktilar/ Git dışında). Çalışmanın tamamı kabul_gunlugu.txt dosyasına kaydedilir.
 % Süre: ~12 dk.
 %
-% 28.11.2026 - Poyraz: ilk sürüm
+% 28.11.2026 - Poyraz: ilk sürüm; günlükte uyarı yığın izleri kapalı, komutlara reason alanı
 
 p = inputParser;
 p.addParameter('kirliyeIzinVer', false, @(x) islogical(x) || isnumeric(x));
@@ -67,6 +67,9 @@ gunluk = fullfile(paket, 'kabul_gunlugu.txt');
 diary(gunluk);
 diary on
 kapatGunluk = onCleanup(@() diary('off')); %#ok<NASGU>
+eskiUyari = warning('query', 'backtrace');            % günlükte uyarıların yığın izi (bağlantılı satırlar) olmasın;
+warning('off', 'backtrace');                          % uyarı metinleri yine yazılır
+geriUyari = onCleanup(@() warning(eskiUyari)); %#ok<NASGU>
 fprintf('KABUL PAKETİ %s\nCommit: %s | Dal: %s | Temiz: %s\n', ad, sha, dal, mat2str(temiz));
 
 %% 2) Ortam
@@ -327,14 +330,14 @@ function id = uuidUret(rs)
 end
 
 function komutYaz(klasor, dosyaAdi, cid, istenen, hh, mm)
-    % Alanlar docs/SIMULINK_RELAY_PROTOCOL.md'deki komut biçimidir. Tarih bugün, geçerlilik 24 saat;
+    % Alanlar docs/SIMULINK_RELAY_PROTOCOL.md'deki örnek komutla aynıdır (reason dahil). Tarih bugün, geçerlilik 24 saat;
     % simülasyon saati createdAt'in +03:00 saatinden alınır.
     bugun = datetime('today', 'TimeZone', 'Europe/Istanbul');
     k = struct('schemaVersion', '1.0.0', 'id', cid, 'commandId', cid, 'meterId', 'SIM-0001', ...
                'actorId', 'matlab-kabul-paketi', ...
                'createdAt', sprintf('%sT%02d:%02d:00+03:00', char(bugun, 'yyyy-MM-dd'), hh, mm), ...
                'expiresAt', sprintf('%sT%02d:%02d:00+03:00', char(bugun + days(1), 'yyyy-MM-dd'), hh, mm), ...
-               'requestedRelayState', istenen);
+               'requestedRelayState', istenen, 'reason', 'MATLAB kabul paketi testi');
     if ~exist(fullfile(klasor, 'gelen'), 'dir'), mkdir(fullfile(klasor, 'gelen')); end
     fid = fopen(fullfile(klasor, 'gelen', dosyaAdi), 'w', 'n', 'UTF-8');
     fprintf(fid, '%s\n', jsonencode(k, 'PrettyPrint', true));
